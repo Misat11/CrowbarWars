@@ -77,6 +77,7 @@ public class Main extends SimpleApplication {
         settingsmenu = new Container();
         multiplayermenu = new Container();
         progressbar = new Container();
+        mapSpatials = new HashMap<String, Spatial>();
 
         guiNode.attachChild(mainmenu);
 
@@ -244,7 +245,6 @@ public class Main extends SimpleApplication {
         guiNode.attachChild(progressbar);
         progress.setProgressPercent(0.0);
         progress.setMessage("Loading Base File...");
-        System.out.println();
         JSONObject obj = JSONLoader.main("assets/Maps/" + map + ".json");
         if (obj == null) {
             progress.setMessage("File not found or not valid...");
@@ -268,22 +268,24 @@ public class Main extends SimpleApplication {
         }
         String terrain = obj.get("terrain").toString();
         if (terrain == null) {
-            progress.setMessage("File not valid...");
+            progress.setMessage("File not valid..");
             progress.setProgressPercent(0.0);
             return false;
         }
 
         progress.setProgressPercent(0.3);
         progress.setMessage("Loading terrain...");
-        mapSpatials.put("terrain_" + map, assetManager.loadModel(terrain));
-        if (mapSpatials.get("terrain_" + map) == null) {
+        Spatial Terrain = assetManager.loadModel(terrain);
+        mapSpatials.put("terrain", Terrain);
+        if (mapSpatials.get("terrain") == null) {
             progress.setMessage("Terrain not found or not valid...");
             progress.setProgressPercent(0.0);
             return false;
         }
         progress.setProgressPercent(0.6);
         progress.setMessage("Loading player model...");
-        mapSpatials.put("me_playermodel", assetManager.loadModel(pmodel));
+        Spatial PlayerModel = assetManager.loadModel(pmodel);
+        mapSpatials.put("me_playermodel", PlayerModel);
         if (mapSpatials.get("me_playermodel") == null) {
             progress.setMessage("Player model not found or not valid...");
             progress.setProgressPercent(0.0);
@@ -299,7 +301,7 @@ public class Main extends SimpleApplication {
         progress.setProgressPercent(0.9);
         progress.setMessage("Spawning objects...");
 
-        rootNode.attachChild(mapSpatials.get("terrain_" + map));
+        rootNode.attachChild(mapSpatials.get("terrain"));
         rootNode.attachChild(mapSpatials.get("me_playermodel"));
 
         progress.setProgressPercent(1.0);
