@@ -15,9 +15,11 @@ import com.jme3.network.MessageListener;
  */
 public class ClientListener implements MessageListener<Client>{
     private Client client;
+    private ServerDataManager dataManager;
     
-    public ClientListener(Client client){
+    public ClientListener(Client client, ServerDataManager dataManager){
         this.client = client;
+        this.dataManager = dataManager;
     }
 
     @Override
@@ -27,6 +29,11 @@ public class ClientListener implements MessageListener<Client>{
             String msg = tx.getMessage();
             System.out.println(msg);
             Main.addToChat(msg);
+        } else if (m instanceof PlayerListMessage) {
+            PlayerListMessage lm = (PlayerListMessage) m;
+            dataManager.refreshPlayerList(lm.getPlayerList());
+        } else if (m instanceof ServerInfoMessage){
+            Main.instance.serverInfoMessage = (ServerInfoMessage) m;
         }
     }
 }

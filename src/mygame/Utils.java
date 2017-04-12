@@ -16,5 +16,9 @@ public class Utils {
     
     public static void initSerializer(){
         Serializer.registerClass(TextMessage.class);
+        Serializer.registerClass(PlayerData.class);
+        Serializer.registerClass(PlayerDataMessage.class);
+        Serializer.registerClass(ServerInfoMessage.class);
+        Serializer.registerClass(PlayerListMessage.class);
     }
 }

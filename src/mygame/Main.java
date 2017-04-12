@@ -9,23 +9,29 @@ import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.Client;
 import com.jme3.network.ClientStateListener;
 import com.jme3.network.Network;
 import com.jme3.scene.Spatial;
+import com.simsilica.lemur.Axis;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.Button;
 import com.simsilica.lemur.Command;
 import com.simsilica.lemur.Container;
+import com.simsilica.lemur.FillMode;
 import com.simsilica.lemur.Label;
 import com.simsilica.lemur.ProgressBar;
 import com.simsilica.lemur.TextField;
-import com.simsilica.lemur.component.BorderLayout;
+import com.simsilica.lemur.component.SpringGridLayout;
 import com.simsilica.lemur.style.BaseStyles;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mygame.JSONLoader;
@@ -47,16 +53,19 @@ public class Main extends SimpleApplication implements ClientStateListener {
     public Container multiplayermenu;
     public Container chatw;
     public Container progressbar;
-    public Label chat;
-    public TextField chati;
+    public Container chati;
+    public TextField chatii;
     public ProgressBar progress;
     public int key_up = KeyInput.KEY_W;
     public int key_down = KeyInput.KEY_S;
     public int key_left = KeyInput.KEY_A;
     public int key_right = KeyInput.KEY_D;
     public int key_enter = KeyInput.KEY_EQUALS;
+    public int key_chat = KeyInput.KEY_T;
+
     public TextField port;
     public TextField ip;
+    public TextField name;
 
     public String state = "loading";
     public JSONObject actualMap;
@@ -71,8 +80,19 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
     public Client client;
 
-    public float screenWidth;
-    public float screenHeight;
+    public boolean chatopen = false;
+
+    public PlayerData my_playerdata;
+
+    public ServerDataManager dataManager;
+
+    public Messages messages;
+
+    public ServerInfoMessage serverInfoMessage;
+
+    public String gameversion = "CrowbarWars Multiplayer 0.1 beta";
+    public String gamehashcode = "crbar_multi";
+    public int protocol = 1;
 
     public static void main(String[] args) {
         Utils.initSerializer();
@@ -84,6 +104,8 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
     @Override
     public void simpleInitApp() {
+        messages = new Messages();
+
         state = "mainmenu";
 
         inputManager.deleteMapping(SimpleApplication.INPUT_MAPPING_EXIT);
@@ -93,12 +115,14 @@ public class Main extends SimpleApplication implements ClientStateListener {
         inputManager.addMapping("Left", new KeyTrigger(key_left));
         inputManager.addMapping("Right", new KeyTrigger(key_right));
         inputManager.addMapping("Enter", new KeyTrigger(key_enter));
+        inputManager.addMapping("Chat", new KeyTrigger(key_chat));
         inputManager.addListener(actionListener, "Pause");
         inputManager.addListener(actionListener, "Up");
         inputManager.addListener(actionListener, "Down");
         inputManager.addListener(actionListener, "Left");
         inputManager.addListener(actionListener, "Right");
         inputManager.addListener(actionListener, "Enter");
+        inputManager.addListener(actionListener, "Chat");
 
         getInputManager().setCursorVisible(true);
 
@@ -117,7 +141,8 @@ public class Main extends SimpleApplication implements ClientStateListener {
         settingsmenu = new Container();
         multiplayermenu = new Container();
         progressbar = new Container();
-        chatw = new Container(new BorderLayout());
+        chati = new Container();
+        chatw = new Container(new SpringGridLayout(Axis.Y, Axis.X, FillMode.Last, FillMode.Last));
         mapSpatials = new HashMap<String, Spatial>();
         bulletAppState = new BulletAppState();
 
@@ -244,25 +269,37 @@ public class Main extends SimpleApplication implements ClientStateListener {
         progress.setProgressPercent(0);
 
         //CHAT
-        chatw.setLocalTranslation(10, 10, 0);
-        Vector3f winDim = new Vector3f(screenHeight, screenHeight * 0.35f, 0f);
-        chat = chatw.addChild(new Label(""));
-        chat.setPreferredSize(winDim);
-        chati = chatw.addChild(new TextField(""));
-        chat.setLocalTranslation(
-                (screenWidth - winDim.x) / 2,
-                screenHeight / 2 + winDim.y / 2,
-                10f
-        );
-        chat.setFontSize(16);
-        chati.setAlpha(0.2f);
-        chat.setAlpha(0.2f);
+        chatw.setLocalTranslation(10, 300, 0);
+
+        chatw.setPreferredSize(new Vector3f(300, 200, 0));
+
+        chati.setLocalTranslation(10, 80, 0);
+        chatii = chati.addChild(new TextField(""));
+        chati.setPreferredSize(new Vector3f(300, 40, 0));
+        Button sendbutton = chati.addChild(new Button("Send"));
+        sendbutton.addClickCommands(new Command<Button>() {
+            @Override
+            public void execute(Button source) {
+                String text = chatii.getText();
+                if (text.equals("") == false) {
+                    client.send(new TextMessage(text));
+                    chatii.setText("");
+                    if (state.equals("inmultigame")) {
+                        guiNode.detachChild(chati);
+                        chatw.setAlpha(0.2f);
+                        chatopen = false;
+                    }
+                }
+            }
+        });
+        chatw.setAlpha(0.2f);
 
         //MULTIPLAYER MENU
         multiplayermenu.setLocalTranslation(300, 300, 0);
         multiplayermenu.addChild(new Label("Multiplayer"));
         ip = multiplayermenu.addChild(new TextField(""));
         port = multiplayermenu.addChild(new TextField(Integer.toString(Utils.BASE_PORT)));
+        name = multiplayermenu.addChild(new TextField(""));
         Button backtomainfrommulti = multiplayermenu.addChild(new Button("Back"));
         backtomainfrommulti.addClickCommands(new Command<Button>() {
             @Override
@@ -281,8 +318,9 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 if (state.equals("multiplayerconnectmenu")) {
                     guiNode.detachChild(multiplayermenu);
                     String i = ip.getText();
+                    String n = name.getText();
                     int p = Integer.parseInt(port.getText());
-                    initConnection(i, p);
+                    initConnection(i, p, n);
                     state = "inmultigame";
                 }
             }
@@ -297,6 +335,8 @@ public class Main extends SimpleApplication implements ClientStateListener {
             @Override
             public void execute(Button source) {
                 if (state.equals("inmultigame_pause")) {
+                    chatw.setAlpha(0.2f);
+                    guiNode.detachChild(chati);
                     guiNode.detachChild(pausemenu_multiplayer);
                     state = "inmultigame";
                     getInputManager().setCursorVisible(false);
@@ -334,14 +374,25 @@ public class Main extends SimpleApplication implements ClientStateListener {
                     state = "ingame_pause";
                     getInputManager().setCursorVisible(true);
                 } else if (state.equals("inmultigame")) {
-                    guiNode.attachChild(pausemenu_multiplayer);
-                    state = "inmultigame_pause";
-                    getInputManager().setCursorVisible(true);
+                    if (chatopen == true) {
+                        chatw.setAlpha(0.2f);
+                        guiNode.detachChild(chati);
+                        getInputManager().setCursorVisible(false);
+                        chatopen = false;
+                    } else {
+                        guiNode.attachChild(pausemenu_multiplayer);
+                        state = "inmultigame_pause";
+                        chatw.setAlpha(1f);
+                        guiNode.attachChild(chati);
+                        getInputManager().setCursorVisible(true);
+                    }
                 } else if (state.equals("ingame_pause")) {
                     guiNode.detachChild(pausemenu);
                     state = "ingame";
                     getInputManager().setCursorVisible(false);
                 } else if (state.equals("inmultigame_pause")) {
+                    chatw.setAlpha(0.2f);
+                    guiNode.detachChild(chati);
                     guiNode.detachChild(pausemenu_multiplayer);
                     state = "inmultigame";
                     getInputManager().setCursorVisible(false);
@@ -356,7 +407,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 }
             }
             if (name.equals("Up")) {
-                if (state.equals("ingame") && state.equals("inmultigame")) {
+                if (state.equals("ingame") || (state.equals("inmultigame") && chatopen == false)) {
                     if (keyPressed) {
                         up = true;
                     } else {
@@ -365,7 +416,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 }
             }
             if (name.equals("Down")) {
-                if (state.equals("ingame") && state.equals("inmultigame")) {
+                if (state.equals("ingame") || (state.equals("inmultigame") && chatopen == false)) {
                     if (keyPressed) {
                         down = true;
                     } else {
@@ -374,7 +425,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 }
             }
             if (name.equals("Left")) {
-                if (state.equals("ingame") && state.equals("inmultigame")) {
+                if (state.equals("ingame") || (state.equals("inmultigame") && chatopen == false)) {
                     if (keyPressed) {
                         left = true;
                     } else {
@@ -383,7 +434,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 }
             }
             if (name.equals("Right")) {
-                if (state.equals("ingame") && state.equals("inmultigame")) {
+                if (state.equals("ingame") || (state.equals("inmultigame") && chatopen == false)) {
                     if (keyPressed) {
                         right = true;
                     } else {
@@ -392,17 +443,24 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 }
             }
             if (name.equals("Jump")) {
-                if (state.equals("ingame") && state.equals("inmultigame")) {
+                if (state.equals("ingame") || (state.equals("inmultigame") && chatopen == false)) {
                     character.jump();
                 }
             }
             if (name.equals("Enter")) {
-                if (state.equals("inmultigame")) {
-                    String text = chati.getText();
+                if (state.equals("inmultigame") && chatopen == true) {
+                    String text = chatii.getText();
                     if (text.equals("") == false) {
                         client.send(new TextMessage(text));
-                        chati.setText("");
+                        chatii.setText("");
                     }
+                }
+            }
+            if (name.equals("Chat")) {
+                if (state.equals("inmultigame") && chatopen == false) {
+                    chatw.setAlpha(1f);
+                    guiNode.attachChild(chati);
+                    chatopen = true;
                 }
             }
         }
@@ -483,8 +541,6 @@ public class Main extends SimpleApplication implements ClientStateListener {
         character.setGravity(10f);
         character.setJumpSpeed(20f);
 
-        bulletAppState.setDebugEnabled(true);
-
         chasecam = new ChaseCamera(cam, mapSpatials.get("me_playermodel"), inputManager);
 
         progress.setProgressPercent(1.0);
@@ -537,7 +593,67 @@ public class Main extends SimpleApplication implements ClientStateListener {
         return true;
     }
 
+    @Override
     public void simpleUpdate(float tpf) {
+        if (state.equals("inmultigame") || state.equals("inmultigame_pause")) {
+            if (client.isConnected()) {
+                client.send(new PlayerDataMessage(my_playerdata));
+            }
+            List<Label> notshowed = messages.getNotShowed();
+            for (Label msg : notshowed) {
+                chatw.addChild(msg);
+            }
+        }
+        /* if (state.equals("inmultigame") || state.equals("inmultigame_pause")) {
+            Vector3f camDir = cam.getDirection().clone();
+            Vector3f camLeft = cam.getLeft().clone();
+            camDir.y = 0;
+            camLeft.y = 0;
+            camDir.normalizeLocal();
+            camLeft.normalizeLocal();
+            walkDirection.set(0, 0, 0);
+
+            if (left) {
+                walkDirection.addLocal(camLeft);
+            }
+            if (right) {
+                walkDirection.addLocal(camLeft.negate());
+            }
+            if (up) {
+                walkDirection.addLocal(camDir);
+            }
+            if (down) {
+                walkDirection.addLocal(camDir.negate());
+            }
+
+            if (!character.onGround()) {
+                airTime += tpf;
+            } else {
+                airTime = 0;
+            }
+
+            if (walkDirection.lengthSquared() == 0) {
+                // if (!"stand".equals(animationChannel.getAnimationName())) {
+                //     animationChannel.setAnim("stand", 1f);
+                // }
+            } else {
+                character.setViewDirection(walkDirection);
+                // if (airTime > .3f) {
+                //     if (!"stand".equals(animationChannel.getAnimationName())) {
+                //         animationChannel.setAnim("stand");
+                //     }
+                // } else if (!"Walk".equals(animationChannel.getAnimationName())) {
+                //     animationChannel.setAnim("Walk", 0.7f);
+                // }
+            }
+
+            walkDirection.multLocal(25f).multLocal(tpf);
+            float x = walkDirection.getX();
+            float y = walkDirection.getY();
+            float z = walkDirection.getZ();
+            my_playerdata.setLocation(new Vector3f(x, y, z));
+            character.setWalkDirection(walkDirection);
+        } */
         if (state.equals("ingame") || state.equals("ingame_pause")) {
             Vector3f camDir = cam.getDirection().clone();
             Vector3f camLeft = cam.getLeft().clone();
@@ -586,13 +702,59 @@ public class Main extends SimpleApplication implements ClientStateListener {
         }
     }
 
-    public void initConnection(String ip, int port) {
-        System.out.println("Connecting");
+    public void initConnection(String ip, int port, String name) {
         try {
+            System.out.println("Connecting to server [" + ip + ":" + port + "] as " + name);
+            serverInfoMessage = null;
+            dataManager = new ServerDataManager(this, assetManager, bulletAppState);
             client = Network.connectToServer(ip, port);
-            client.addMessageListener(new ClientListener(client));
+            client.addMessageListener(new ClientListener(client, dataManager));
             client.addClientStateListener(this);
             client.start();
+            dataManager.setMyId(client.getId());
+            my_playerdata = new PlayerData(client.getId(), name, new Vector3f(), new Quaternion(), "Models/womanmodel.j3o", 100);
+            client.send(new PlayerDataMessage(my_playerdata));
+            
+            System.out.println("Waiting for server information.");
+
+            int timeout = 180;
+
+            while (true) {
+                if (serverInfoMessage == null) {
+                    if ( (System.currentTimeMillis() % 1000) == 0) {
+                        if (timeout != 0) {
+                            timeout = timeout - 1;
+                            System.out.println("Waiting for respond.");
+                        } else {
+                            client.close();
+                            System.out.println("[Invalid Connection]: ServerInfoMessage not send. Disconnecting.");
+                            return;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if (serverInfoMessage.getGameHashCode().equals(gamehashcode) == false) {
+                client.close();
+                System.out.println("[Invalid Connection]: ServerInfoMessage has invalid gamehashcode. Disconnecting.");
+                return;
+            }
+
+            if (serverInfoMessage.getProtocolVersion() != protocol) {
+                client.close();
+                System.out.println("[Invalid Connection]: ServerInfoMessage has invalid protocol version. Disconnecting.");
+                return;
+            }
+
+            mapSpatials.clear();
+
+            mapSpatials.put("terrain", assetManager.loadModel(serverInfoMessage.getWorldScene()));
+
+            rootNode.attachChild(mapSpatials.get("terrain"));
+
+            System.out.println("Misat11 has connected to server \"" + serverInfoMessage.getServerName() + "\" [" + ip + ":" + port + "]");
 
             guiNode.detachChild(multiplayermenu);
             guiNode.attachChild(chatw);
@@ -605,15 +767,35 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
     @Override
     public void clientConnected(Client c) {
-        client.send(new TextMessage("I'm connected"));
+
     }
 
     @Override
     public void clientDisconnected(Client c, DisconnectInfo info) {
-        guiNode.detachChild(chatw);
+        if (state.equals("inmultigame") || state.equals("inmultigame_pause")) {
+            guiNode.detachChild(chatw);
+            guiNode.detachChild(chati);
+            rootNode.detachChild(mapSpatials.get("terrain"));
+            for (Map.Entry<String, Spatial> entry : mapSpatials.entrySet()) {
+                Spatial value = entry.getValue();
+                rootNode.detachChild(value);
+            }
+            mapSpatials.clear();
+            
+            for (Object key : dataManager.getPlayerList().keySet()) {
+                dataManager.removePlayer((int) key);
+            }
+            
+            dataManager.getPlayerList().clear();
+            
+            stateManager.detach(bulletAppState);
+            System.out.println("Connection to [" + ip.getText() + ":" + port.getText() + "] closed. Thank for connection.");
+        }
     }
 
     public static void addToChat(String newmsg) {
-        instance.chat.setText(instance.chat.getText() + "\n" + newmsg);
+        Label msg = new Label(newmsg);
+        msg.setMaxWidth(300);
+        instance.messages.addMessage(msg);
     }
 }
