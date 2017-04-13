@@ -30,8 +30,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mygame.JSONLoader;
@@ -86,8 +84,6 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
     public ServerDataManager dataManager;
 
-    public Messages messages;
-
     public ServerInfoMessage serverInfoMessage;
 
     public String gameversion = "CrowbarWars Multiplayer 0.1 beta";
@@ -104,8 +100,6 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
     @Override
     public void simpleInitApp() {
-        messages = new Messages();
-
         state = "mainmenu";
 
         inputManager.deleteMapping(SimpleApplication.INPUT_MAPPING_EXIT);
@@ -599,10 +593,6 @@ public class Main extends SimpleApplication implements ClientStateListener {
             if (client.isConnected()) {
                 client.send(new PlayerDataMessage(my_playerdata));
             }
-            List<Label> notshowed = messages.getNotShowed();
-            for (Label msg : notshowed) {
-                chatw.addChild(msg);
-            }
         }
         /* if (state.equals("inmultigame") || state.equals("inmultigame_pause")) {
             Vector3f camDir = cam.getDirection().clone();
@@ -708,7 +698,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
             serverInfoMessage = null;
             dataManager = new ServerDataManager(this, assetManager, bulletAppState);
             client = Network.connectToServer(ip, port);
-            client.addMessageListener(new ClientListener(client, dataManager));
+            client.addMessageListener(new ClientListener(client, dataManager, this));
             client.addClientStateListener(this);
             client.start();
             dataManager.setMyId(client.getId());
@@ -791,11 +781,5 @@ public class Main extends SimpleApplication implements ClientStateListener {
             stateManager.detach(bulletAppState);
             System.out.println("Connection to [" + ip.getText() + ":" + port.getText() + "] closed. Thank for connection.");
         }
-    }
-
-    public static void addToChat(String newmsg) {
-        Label msg = new Label(newmsg);
-        msg.setMaxWidth(300);
-        instance.messages.addMessage(msg);
     }
 }
