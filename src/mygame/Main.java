@@ -695,7 +695,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
         try {
             System.out.println("Connecting to server [" + ip + ":" + port + "] as " + name);
             serverInfoMessage = null;
-            dataManager = new ServerDataManager(this, assetManager, bulletAppState);
+            dataManager = new ServerDataManager(this, assetManager, bulletAppState, guiFont, cam);
             client = Network.connectToServer(ip, port);
             client.addMessageListener(new ClientListener(client, dataManager, this));
             client.addClientStateListener(this);
