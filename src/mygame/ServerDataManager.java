@@ -84,7 +84,13 @@ public class ServerDataManager {
     }
 
     public void refreshPlayerList(HashMap players) {
+        Set<Integer> oldPlayers = this.player.keySet();
         this.player.putAll(players);
+        for(int old : oldPlayers){
+            if(this.player.containsKey(old) == false){
+                removePlayer(old);
+            }
+        }
         updateAllPlayerEntities();
     }
 
@@ -100,22 +106,20 @@ public class ServerDataManager {
 
     private void updataPlayerEntity(final int id, final PlayerData data) {
 
-        if (myId != id) {
-            if (!entities.containsKey(id)) {
-                loadAndAddPlayerToRootNode(id, data);
-                return;
-            }
-            main.enqueue(new Callable() {
-                @Override
-                public Object call() throws Exception {
-                    entities.get(id).getControl(CharacterControl.class).setWalkDirection(data.getWalkDirection());
-                    entities.get(id).getControl(CharacterControl.class).warp(data.getLocation());
-                    entities.get(id).getControl(CharacterControl.class).setViewDirection(data.getViewDirection());
-                    entities.get(id).setLocalRotation(data.getRotation());
-                    return null;
-                }
-            });
+        if (!entities.containsKey(id)) {
+            loadAndAddPlayerToRootNode(id, data);
+            return;
         }
+        main.enqueue(new Callable() {
+            @Override
+            public Object call() throws Exception {
+                entities.get(id).getControl(CharacterControl.class).setWalkDirection(data.getWalkDirection());
+                entities.get(id).getControl(CharacterControl.class).warp(data.getLocation());
+                entities.get(id).getControl(CharacterControl.class).setViewDirection(data.getViewDirection());
+                entities.get(id).setLocalRotation(data.getRotation());
+                return null;
+            }
+        });
 
     }
 
