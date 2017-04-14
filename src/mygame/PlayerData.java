@@ -19,6 +19,7 @@ public class PlayerData {
     private String playername;
     
     private Vector3f walkDirection;
+    private Vector3f viewDirection;
     private Vector3f location;
     private Quaternion rotation;
     
@@ -35,6 +36,7 @@ public class PlayerData {
         this.modelAsset = model;
         this.health = h;
         this.walkDirection = new Vector3f();
+        this.viewDirection = new Vector3f();
     }
     
     public int getId(){
@@ -91,5 +93,13 @@ public class PlayerData {
     
     public void setWalkDirection(Vector3f walk){
         this.walkDirection = walk;
+    }
+    
+    public Vector3f getViewDirection(){
+        return this.viewDirection;
+    }
+    
+    public void setViewDirection(Vector3f view){
+        this.viewDirection = view;
     }
 }

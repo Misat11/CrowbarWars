@@ -28,7 +28,6 @@ import com.simsilica.lemur.component.SpringGridLayout;
 import com.simsilica.lemur.style.BaseStyles;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -280,13 +279,13 @@ public class Main extends SimpleApplication implements ClientStateListener {
                     chatii.setText("");
                     if (state.equals("inmultigame")) {
                         guiNode.detachChild(chati);
-                        chatw.setAlpha(0.2f);
+        chatw.setAlpha(0.4f);
                         chatopen = false;
                     }
                 }
             }
         });
-        chatw.setAlpha(0.2f);
+        chatw.setAlpha(0.4f);
 
         //MULTIPLAYER MENU
         multiplayermenu.setLocalTranslation(300, 300, 0);
@@ -329,7 +328,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
             @Override
             public void execute(Button source) {
                 if (state.equals("inmultigame_pause")) {
-                    chatw.setAlpha(0.2f);
+        chatw.setAlpha(0.4f);
                     guiNode.detachChild(chati);
                     guiNode.detachChild(pausemenu_multiplayer);
                     state = "inmultigame";
@@ -369,7 +368,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
                     getInputManager().setCursorVisible(true);
                 } else if (state.equals("inmultigame")) {
                     if (chatopen == true) {
-                        chatw.setAlpha(0.2f);
+        chatw.setAlpha(0.4f);
                         guiNode.detachChild(chati);
                         getInputManager().setCursorVisible(false);
                         chatopen = false;
@@ -385,7 +384,8 @@ public class Main extends SimpleApplication implements ClientStateListener {
                     state = "ingame";
                     getInputManager().setCursorVisible(false);
                 } else if (state.equals("inmultigame_pause")) {
-                    chatw.setAlpha(0.2f);
+            
+        chatw.setAlpha(0.4f);
                     guiNode.detachChild(chati);
                     guiNode.detachChild(pausemenu_multiplayer);
                     state = "inmultigame";
@@ -641,7 +641,8 @@ public class Main extends SimpleApplication implements ClientStateListener {
             character.setWalkDirection(walkDirection);
             my_playerdata.setWalkDirection(walkDirection);
             my_playerdata.setLocation(character.getPhysicsLocation());
-        } 
+            my_playerdata.setViewDirection(character.getViewDirection());
+        }
         if (state.equals("ingame") || state.equals("ingame_pause")) {
             Vector3f camDir = cam.getDirection().clone();
             Vector3f camLeft = cam.getLeft().clone();
@@ -750,6 +751,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
             System.out.println("Misat11 has connected to server \"" + serverInfoMessage.getServerName() + "\" [" + ip + ":" + port + "]");
 
+            chatw.setAlpha(0.4f);
             guiNode.detachChild(multiplayermenu);
             guiNode.attachChild(chatw);
             state = "inmultigame";
@@ -781,16 +783,17 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 Spatial value = entry.getValue();
                 rootNode.detachChild(value);
             }
-            mapSpatials.clear();
 
-            for (Iterator it = dataManager.getPlayerList().keySet().iterator(); it.hasNext();) {
-                int key = it.hashCode();
+            for (int key : dataManager.getPlayerIdList()) {
                 dataManager.removePlayer(key);
             }
 
-            dataManager.getPlayerList().clear();
+            bulletAppState.getPhysicsSpace().removeAll(mapSpatials.get("terrain"));
 
             stateManager.detach(bulletAppState);
+            rootNode.detachAllChildren();
+            mapSpatials.clear();
+            dataManager = null;
             System.out.println("Connection to [" + ip.getText() + ":" + port.getText() + "] closed. Thank for connection.");
         }
     }

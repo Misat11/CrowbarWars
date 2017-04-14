@@ -20,5 +20,6 @@ public class Utils {
         Serializer.registerClass(PlayerDataMessage.class);
         Serializer.registerClass(ServerInfoMessage.class);
         Serializer.registerClass(PlayerListMessage.class);
+        Serializer.registerClass(JoinLeaveMessage.class);
     }
 }

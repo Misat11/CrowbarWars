@@ -19,6 +19,7 @@ public class PlayerDataMessage extends AbstractMessage {
     private Vector3f location;
     private Quaternion rotation;
     private Vector3f walkDirection;
+    private Vector3f viewDirection;
     private String name;
     private String modelAsset;
     private int health;
@@ -32,6 +33,7 @@ public class PlayerDataMessage extends AbstractMessage {
         this.health = data.getHealth();
         this.rotation = data.getRotation();
         this.walkDirection = data.getWalkDirection();
+        this.viewDirection = data.getViewDirection();
     }
     
     public String getName(){
@@ -56,6 +58,10 @@ public class PlayerDataMessage extends AbstractMessage {
     
     public Vector3f getWalkDirection(){
         return this.walkDirection;
+    }
+    
+    public Vector3f getViewDirection(){
+        return this.viewDirection;
     }
             
             

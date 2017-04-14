@@ -48,6 +48,13 @@ public class ClientListener implements MessageListener<Client> {
             dataManager.refreshPlayerList(lm.getPlayerList());
         } else if (m instanceof ServerInfoMessage) {
             Main.instance.serverInfoMessage = (ServerInfoMessage) m;
+        } else if (m instanceof JoinLeaveMessage) {
+            JoinLeaveMessage jlm = (JoinLeaveMessage) m;
+            if(jlm.getIfJoinOrLeave()){
+            
+            } else {
+                dataManager.removePlayer(jlm.getClientId());
+            }
         }
     }
 }

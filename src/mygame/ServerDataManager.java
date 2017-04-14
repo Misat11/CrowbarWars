@@ -49,12 +49,12 @@ public class ServerDataManager {
             main.enqueue(new Callable() {
                 @Override
                 public Object call() throws Exception {
+                    entities.get(id).removeControl(CharacterControl.class);
+                    bulletAppState.getPhysicsSpace().removeAll(entities.get(id));
                     main.getRootNode().detachChild(entities.get(id));
-                    bulletAppState.getPhysicsSpace().remove(entities.get(id));
                     entities.remove(id);
                     return null;
                 }
-
             });
         }
     }
@@ -65,6 +65,10 @@ public class ServerDataManager {
 
     public HashMap getPlayerList() {
         return player;
+    }
+
+    public Set<Integer> getPlayerIdList() {
+        return player.keySet();
     }
 
     public HashMap getEntityList() {
@@ -106,6 +110,7 @@ public class ServerDataManager {
                 public Object call() throws Exception {
                     entities.get(id).getControl(CharacterControl.class).setWalkDirection(data.getWalkDirection());
                     entities.get(id).getControl(CharacterControl.class).warp(data.getLocation());
+                    entities.get(id).getControl(CharacterControl.class).setViewDirection(data.getViewDirection());
                     entities.get(id).setLocalRotation(data.getRotation());
                     return null;
                 }
@@ -124,12 +129,15 @@ public class ServerDataManager {
 
     private void loadAndAddPlayerToRootNode(final int id, PlayerData data) {
         entities.put(id, loadSpatial(data.getLocation(), data.getRotation(), data.getModelAsset()));
-        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 1.8f);
-        CharacterControl control = new CharacterControl(capsuleShape, 0.01f);
-        entities.get(id).addControl(control);
-        control.setGravity(10f);
-        control.setJumpSpeed(20f);
-        control.warp(data.getLocation());
+
+        if (myId != id) {
+            CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 1.8f);
+            CharacterControl control = new CharacterControl(capsuleShape, 0.01f);
+            entities.get(id).addControl(control);
+            control.setGravity(10f);
+            control.setJumpSpeed(20f);
+            control.warp(data.getLocation());
+        }
 
         main.enqueue(new Callable() {
             @Override
