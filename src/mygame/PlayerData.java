@@ -17,6 +17,8 @@ import com.jme3.network.serializing.Serializable;
 public class PlayerData {
     private int id;
     private String playername;
+    
+    private Vector3f walkDirection;
     private Vector3f location;
     private Quaternion rotation;
     
@@ -32,14 +34,23 @@ public class PlayerData {
         this.rotation = rot;
         this.modelAsset = model;
         this.health = h;
+        this.walkDirection = new Vector3f();
     }
     
     public int getId(){
         return this.id;
     }
     
+    public void setId(int id){
+        this.id = id;
+    }
+    
     public String getName(){
         return this.playername;
+    }
+    
+    public void setName(String name){
+       this.playername = name;
     }
     
     public Vector3f getLocation(){
@@ -62,11 +73,23 @@ public class PlayerData {
         return this.modelAsset;
     }
     
+    public void setModelAsset(String newModelAsset){
+        this.modelAsset = newModelAsset;
+    }
+    
     public int getHealth(){
         return this.health;
     }
     
     public void setHealth(int h){
         this.health = h;
+    }
+    
+    public Vector3f getWalkDirection(){
+        return this.walkDirection;
+    }
+    
+    public void setWalkDirection(Vector3f walk){
+        this.walkDirection = walk;
     }
 }

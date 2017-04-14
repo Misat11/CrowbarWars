@@ -7,7 +7,8 @@ package mygame;
 
 import com.jme3.asset.AssetManager;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.control.BetterCharacterControl;
+import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.control.CharacterControl;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
@@ -53,7 +54,7 @@ public class ServerDataManager {
                     entities.remove(id);
                     return null;
                 }
-            
+
             });
         }
     }
@@ -72,6 +73,10 @@ public class ServerDataManager {
 
     public PlayerData getPlayerData(int id) {
         return player.get(id);
+    }
+
+    public Spatial getEntityData(int id) {
+        return entities.get(id);
     }
 
     public void refreshPlayerList(HashMap players) {
@@ -99,7 +104,8 @@ public class ServerDataManager {
             main.enqueue(new Callable() {
                 @Override
                 public Object call() throws Exception {
-                    entities.get(id).getControl(BetterCharacterControl.class).warp(data.getLocation());
+                    entities.get(id).getControl(CharacterControl.class).setWalkDirection(data.getWalkDirection());
+                    entities.get(id).getControl(CharacterControl.class).warp(data.getLocation());
                     entities.get(id).setLocalRotation(data.getRotation());
                     return null;
                 }
@@ -118,9 +124,11 @@ public class ServerDataManager {
 
     private void loadAndAddPlayerToRootNode(final int id, PlayerData data) {
         entities.put(id, loadSpatial(data.getLocation(), data.getRotation(), data.getModelAsset()));
-        BetterCharacterControl control = new BetterCharacterControl(1.5f, 9, 80);
+        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 1.8f);
+        CharacterControl control = new CharacterControl(capsuleShape, 0.01f);
         entities.get(id).addControl(control);
-        control.setGravity(new Vector3f(0, 40, 0));
+        control.setGravity(10f);
+        control.setJumpSpeed(20f);
         control.warp(data.getLocation());
 
         main.enqueue(new Callable() {

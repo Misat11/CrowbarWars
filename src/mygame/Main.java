@@ -28,7 +28,7 @@ import com.simsilica.lemur.component.SpringGridLayout;
 import com.simsilica.lemur.style.BaseStyles;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -594,7 +594,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 client.send(new PlayerDataMessage(my_playerdata));
             }
         }
-        /* if (state.equals("inmultigame") || state.equals("inmultigame_pause")) {
+        if (state.equals("inmultigame") || state.equals("inmultigame_pause")) {
             Vector3f camDir = cam.getDirection().clone();
             Vector3f camLeft = cam.getLeft().clone();
             camDir.y = 0;
@@ -638,12 +638,10 @@ public class Main extends SimpleApplication implements ClientStateListener {
             }
 
             walkDirection.multLocal(25f).multLocal(tpf);
-            float x = walkDirection.getX();
-            float y = walkDirection.getY();
-            float z = walkDirection.getZ();
-            my_playerdata.setLocation(new Vector3f(x, y, z));
             character.setWalkDirection(walkDirection);
-        } */
+            my_playerdata.setWalkDirection(walkDirection);
+            my_playerdata.setLocation(character.getPhysicsLocation());
+        } 
         if (state.equals("ingame") || state.equals("ingame_pause")) {
             Vector3f camDir = cam.getDirection().clone();
             Vector3f camLeft = cam.getLeft().clone();
@@ -704,14 +702,14 @@ public class Main extends SimpleApplication implements ClientStateListener {
             dataManager.setMyId(client.getId());
             my_playerdata = new PlayerData(client.getId(), name, new Vector3f(), new Quaternion(), "Models/womanmodel.j3o", 100);
             client.send(new PlayerDataMessage(my_playerdata));
-            
+
             System.out.println("Waiting for server information.");
 
             int timeout = 180;
 
             while (true) {
                 if (serverInfoMessage == null) {
-                    if ( (System.currentTimeMillis() % 1000) == 0) {
+                    if ((System.currentTimeMillis() % 1000) == 0) {
                         if (timeout != 0) {
                             timeout = timeout - 1;
                             System.out.println("Waiting for respond.");
@@ -742,7 +740,13 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
             mapSpatials.put("terrain", assetManager.loadModel(serverInfoMessage.getWorldScene()));
 
+            stateManager.attach(bulletAppState);
+
             rootNode.attachChild(mapSpatials.get("terrain"));
+
+            terrainPhysicsNode = new RigidBodyControl(0f);
+            mapSpatials.get("terrain").addControl(terrainPhysicsNode);
+            bulletAppState.getPhysicsSpace().addAll(mapSpatials.get("terrain"));
 
             System.out.println("Misat11 has connected to server \"" + serverInfoMessage.getServerName() + "\" [" + ip + ":" + port + "]");
 
@@ -750,6 +754,14 @@ public class Main extends SimpleApplication implements ClientStateListener {
             guiNode.attachChild(chatw);
             state = "inmultigame";
 
+            CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 1.8f);
+            character = new CharacterControl(capsuleShape, 0.01f);
+            dataManager.getEntityData(client.getId()).addControl(character);
+            character.warp(new Vector3f(0.0f, 60f, 0.0f));
+            character.setGravity(10f);
+            character.setJumpSpeed(20f);
+
+            chasecam = new ChaseCamera(cam, dataManager.getEntityData(client.getId()), inputManager);
         } catch (IOException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -765,19 +777,19 @@ public class Main extends SimpleApplication implements ClientStateListener {
         if (state.equals("inmultigame") || state.equals("inmultigame_pause")) {
             guiNode.detachChild(chatw);
             guiNode.detachChild(chati);
-            rootNode.detachChild(mapSpatials.get("terrain"));
             for (Map.Entry<String, Spatial> entry : mapSpatials.entrySet()) {
                 Spatial value = entry.getValue();
                 rootNode.detachChild(value);
             }
             mapSpatials.clear();
-            
-            for (Object key : dataManager.getPlayerList().keySet()) {
-                dataManager.removePlayer((int) key);
+
+            for (Iterator it = dataManager.getPlayerList().keySet().iterator(); it.hasNext();) {
+                int key = it.hashCode();
+                dataManager.removePlayer(key);
             }
-            
+
             dataManager.getPlayerList().clear();
-            
+
             stateManager.detach(bulletAppState);
             System.out.println("Connection to [" + ip.getText() + ":" + port.getText() + "] closed. Thank for connection.");
         }
