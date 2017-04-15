@@ -59,6 +59,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
     public int key_right = KeyInput.KEY_D;
     public int key_enter = KeyInput.KEY_EQUALS;
     public int key_chat = KeyInput.KEY_T;
+    public int key_jump = KeyInput.KEY_SPACE;
 
     public TextField port;
     public TextField ip;
@@ -108,6 +109,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
         inputManager.addMapping("Left", new KeyTrigger(key_left));
         inputManager.addMapping("Right", new KeyTrigger(key_right));
         inputManager.addMapping("Enter", new KeyTrigger(key_enter));
+        inputManager.addMapping("Jump", new KeyTrigger(key_jump));
         inputManager.addMapping("Chat", new KeyTrigger(key_chat));
         inputManager.addListener(actionListener, "Pause");
         inputManager.addListener(actionListener, "Up");
@@ -115,6 +117,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
         inputManager.addListener(actionListener, "Left");
         inputManager.addListener(actionListener, "Right");
         inputManager.addListener(actionListener, "Enter");
+        inputManager.addListener(actionListener, "Jump");
         inputManager.addListener(actionListener, "Chat");
 
         getInputManager().setCursorVisible(true);
@@ -279,7 +282,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
                     chatii.setText("");
                     if (state.equals("inmultigame")) {
                         guiNode.detachChild(chati);
-        chatw.setAlpha(0.4f);
+                        chatw.setAlpha(0.4f);
                         chatopen = false;
                     }
                 }
@@ -328,7 +331,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
             @Override
             public void execute(Button source) {
                 if (state.equals("inmultigame_pause")) {
-        chatw.setAlpha(0.4f);
+                    chatw.setAlpha(0.4f);
                     guiNode.detachChild(chati);
                     guiNode.detachChild(pausemenu_multiplayer);
                     state = "inmultigame";
@@ -368,7 +371,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
                     getInputManager().setCursorVisible(true);
                 } else if (state.equals("inmultigame")) {
                     if (chatopen == true) {
-        chatw.setAlpha(0.4f);
+                        chatw.setAlpha(0.4f);
                         guiNode.detachChild(chati);
                         getInputManager().setCursorVisible(false);
                         chatopen = false;
@@ -384,8 +387,8 @@ public class Main extends SimpleApplication implements ClientStateListener {
                     state = "ingame";
                     getInputManager().setCursorVisible(false);
                 } else if (state.equals("inmultigame_pause")) {
-            
-        chatw.setAlpha(0.4f);
+
+                    chatw.setAlpha(0.4f);
                     guiNode.detachChild(chati);
                     guiNode.detachChild(pausemenu_multiplayer);
                     state = "inmultigame";
@@ -521,7 +524,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
         terrainPhysicsNode = new RigidBodyControl(0f);
         mapSpatials.get("terrain").addControl(terrainPhysicsNode);
 
-        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 1.8f);
+        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 2f);
         character = new CharacterControl(capsuleShape, 0.01f);
         rootNode.attachChild(mapSpatials.get("terrain"));
         rootNode.attachChild(mapSpatials.get("me_playermodel"));
@@ -756,7 +759,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
             guiNode.attachChild(chatw);
             state = "inmultigame";
 
-            CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 1.8f);
+            CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 2f);
             character = new CharacterControl(capsuleShape, 0.01f);
             dataManager.getEntityData(client.getId()).addControl(character);
             character.warp(new Vector3f(0.0f, 60f, 0.0f));
