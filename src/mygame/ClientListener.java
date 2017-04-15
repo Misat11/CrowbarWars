@@ -8,7 +8,9 @@ package mygame;
 import com.jme3.network.Client;
 import com.jme3.network.Message;
 import com.jme3.network.MessageListener;
+import com.jme3.scene.Node;
 import com.simsilica.lemur.Label;
+import java.util.HashMap;
 import java.util.concurrent.Callable;
 
 /**
@@ -20,6 +22,8 @@ public class ClientListener implements MessageListener<Client> {
     private Client client;
     private ServerDataManager dataManager;
     private Main main;
+    private HashMap<Integer, Node> list = new HashMap<Integer, Node>();
+    private int first_in_list = 1;
 
     public ClientListener(Client client, ServerDataManager dataManager, Main main) {
         this.client = client;
@@ -38,7 +42,12 @@ public class ClientListener implements MessageListener<Client> {
                 public Object call() throws Exception {
                     Label label_msg = new Label(msg);
                     label_msg.setMaxWidth(300);
-                    main.chatw.addChild(label_msg);
+                    if (list.size() > 10) {
+                        main.chatw.removeChild(list.get(first_in_list));
+                        first_in_list = first_in_list + 1;
+                    }
+                    Node child = main.chatw.addChild(label_msg);
+                    list.put(list.size() + 1, child);
                     return null;
                 }
 
@@ -50,8 +59,8 @@ public class ClientListener implements MessageListener<Client> {
             Main.instance.serverInfoMessage = (ServerInfoMessage) m;
         } else if (m instanceof JoinLeaveMessage) {
             JoinLeaveMessage jlm = (JoinLeaveMessage) m;
-            if(jlm.getIfJoinOrLeave()){
-            
+            if (jlm.getIfJoinOrLeave()) {
+
             } else {
                 dataManager.removePlayer(jlm.getClientId());
             }
