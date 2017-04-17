@@ -1,5 +1,67 @@
 {
 	"name": "Test Map",
 	"author": "Misat11",
-	"terrain": "Scenes/Region0/main.j3o"
+	"terrain": "Scenes/Region0/main.j3o",
+        "special": [
+            {
+                "name": "box1",
+                "type": "geometry",
+                "loc_x": 0,
+                "loc_y": 150,
+                "loc_z": 0,
+                "geometry": "box",
+                "geometry_x": 2,
+                "geometry_y": 2,
+                "geometry_z": 2,
+                "material": "Common/MatDefs/Misc/Unshaded.j3md",
+                "texture": "Textures/bricks.png",
+                "texture_type": "ColorMap",
+                "gravity": 1
+            },
+            {
+                "name": "sphere1",
+                "type": "geometry",
+                "loc_x": 10,
+                "loc_y": 150,
+                "loc_z": 10,
+                "geometry": "sphere",
+                "radius": 3,
+                "zSamples": 3,
+                "radialSamples": 3,
+                "material": "Common/MatDefs/Misc/Unshaded.j3md",
+                "texture": "Textures/bricks.png",
+                "texture_type": "ColorMap",
+                "gravity": 1
+            },
+            {
+                "name": "sphere2",
+                "type": "geometry",
+                "loc_x": 30,
+                "loc_y": 150,
+                "loc_z": 30,
+                "geometry": "sphere",
+                "radius": 3,
+                "zSamples": 3,
+                "radialSamples": 3,
+                "material": "Common/MatDefs/Misc/Unshaded.j3md",
+                "texture": "Textures/bricks.png",
+                "texture_type": "ColorMap",
+                "gravity": 1
+            },
+            {
+                "name": "box2",
+                "type": "geometry",
+                "loc_x": -10,
+                "loc_y": 150,
+                "loc_z": -10,
+                "geometry": "box",
+                "geometry_x": 1,
+                "geometry_y": 1,
+                "geometry_z": 1,
+                "material": "Common/MatDefs/Misc/Unshaded.j3md",
+                "texture": "Textures/bricks.png",
+                "texture_type": "ColorMap",
+                "gravity": 1
+            },
+        ]
 }

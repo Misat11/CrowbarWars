@@ -1,5 +1,7 @@
 package mygame;
 
+import com.jme3.animation.AnimChannel;
+import com.jme3.animation.AnimControl;
 import com.jme3.app.SimpleApplication;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
@@ -9,12 +11,19 @@ import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.material.Material;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.network.Client;
 import com.jme3.network.ClientStateListener;
 import com.jme3.network.Network;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
+import com.jme3.scene.SceneGraphVisitorAdapter;
 import com.jme3.scene.Spatial;
+import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Cylinder;
+import com.jme3.scene.shape.Sphere;
 import com.simsilica.lemur.Axis;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.Button;
@@ -28,10 +37,14 @@ import com.simsilica.lemur.component.SpringGridLayout;
 import com.simsilica.lemur.style.BaseStyles;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mygame.JSONLoader;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -51,8 +64,10 @@ public class Main extends SimpleApplication implements ClientStateListener {
     public Container chatw;
     public Container progressbar;
     public Container chati;
+    public Container statbar;
     public TextField chatii;
     public ProgressBar progress;
+    public ProgressBar health;
     public int key_up = KeyInput.KEY_W;
     public int key_down = KeyInput.KEY_S;
     public int key_left = KeyInput.KEY_A;
@@ -89,6 +104,11 @@ public class Main extends SimpleApplication implements ClientStateListener {
     public String gameversion = "CrowbarWars Multiplayer 0.1 beta";
     public String gamehashcode = "crbar_multi";
     public int protocol = 1;
+
+    public List<AnimControl> animControls;
+    public List<AnimChannel> animChannels;
+
+    public float tpf = 0;
 
     public static void main(String[] args) {
         Utils.initSerializer();
@@ -139,6 +159,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
         progressbar = new Container();
         chati = new Container();
         chatw = new Container(new SpringGridLayout(Axis.Y, Axis.X, FillMode.Last, FillMode.Last));
+        statbar =  new Container();
         mapSpatials = new HashMap<String, Spatial>();
         bulletAppState = new BulletAppState();
 
@@ -360,6 +381,16 @@ public class Main extends SimpleApplication implements ClientStateListener {
                 }
             }
         });
+
+        //STAT BAR
+        statbar.setLocalTranslation(450, 35, 0);
+
+        statbar.setPreferredSize(new Vector3f(80, 25, 0));
+        health = statbar.addChild(new ProgressBar());
+        health.setPreferredSize(new Vector3f(80, 25, 0));
+        health.setMessage("Health");
+        health.setProgressPercent(1);
+        
     }
 
     private ActionListener actionListener = new ActionListener() {
@@ -512,6 +543,8 @@ public class Main extends SimpleApplication implements ClientStateListener {
             return false;
         }
 
+        stateManager.attach(bulletAppState);
+
         progress.setProgressPercent(0.8);
         progress.setMessage("Saving actual settings to memory...");
         actualMap = obj;
@@ -519,13 +552,16 @@ public class Main extends SimpleApplication implements ClientStateListener {
         progress.setProgressPercent(0.9);
         progress.setMessage("Spawning objects...");
 
-        stateManager.attach(bulletAppState);
+        boolean isSpecial = false;
+        if (obj.get("special") != null) {
+            isSpecial = true;
+        }
 
         terrainPhysicsNode = new RigidBodyControl(0f);
         mapSpatials.get("terrain").addControl(terrainPhysicsNode);
 
         CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 2f);
-        character = new CharacterControl(capsuleShape, 0.01f);
+        character = new CharacterControl(capsuleShape, 0.09f);
         rootNode.attachChild(mapSpatials.get("terrain"));
         rootNode.attachChild(mapSpatials.get("me_playermodel"));
 
@@ -535,8 +571,95 @@ public class Main extends SimpleApplication implements ClientStateListener {
         bulletAppState.getPhysicsSpace().add(character);
         bulletAppState.getPhysicsSpace().add(terrainPhysicsNode);
         character.warp(new Vector3f(0.0f, 60f, 0.0f));
-        character.setGravity(10f);
-        character.setJumpSpeed(20f);
+        character.setGravity(40f);
+        character.setJumpSpeed(15f);
+        setAnimControls(mapSpatials.get("me_playermodel"));
+
+        if (isSpecial == true) {
+            JSONArray specialContent = (JSONArray) obj.get("special");
+            Iterator i = specialContent.iterator();
+
+            while (i.hasNext()) {
+                try {
+                    JSONObject special = (JSONObject) i.next();
+                    String special_name = special.get("name").toString();
+                    String special_type = special.get("type").toString();
+                    float loc_x = Float.parseFloat(special.get("loc_x").toString());
+                    float loc_y = Float.parseFloat(special.get("loc_y").toString());
+                    float loc_z = Float.parseFloat(special.get("loc_z").toString());
+                    Vector3f location = new Vector3f(loc_x, loc_y, loc_z);
+                    if (special_type.equals("spatial")) {
+                        System.out.println("Selecting and spawning spatial");
+                        String modelAsset = special.get("modelAsset").toString();
+                        Spatial model = assetManager.loadModel(modelAsset);
+                        model.setLocalTranslation(loc_x, loc_y, loc_z);
+                        mapSpatials.put("special_" + special_name, model);
+                        rootNode.attachChild(mapSpatials.get("special_" + special_name));
+                        bulletAppState.getPhysicsSpace().addAll(mapSpatials.get("special_" + special_name));
+                    } else if (special_type.equals("geometry")) {
+                        String geometry = special.get("geometry").toString();
+                        String material = special.get("material").toString();
+                        String texture = special.get("texture").toString();
+                        String texture_type = special.get("texture_type").toString();
+                        float gravity = Float.parseFloat(special.get("gravity").toString());
+                        if (geometry.equals("box")) {
+                            float geometry_x = Float.parseFloat(special.get("geometry_x").toString());
+                            float geometry_y = Float.parseFloat(special.get("geometry_y").toString());
+                            float geometry_z = Float.parseFloat(special.get("geometry_z").toString());
+                            Box b = new Box(geometry_x, geometry_y, geometry_z);
+                            Geometry geom = new Geometry("Box", b);
+                            RigidBodyControl geom_physics = new RigidBodyControl(gravity);
+                            geom.addControl(geom_physics);
+                            Material mat = null;
+                            try {
+                                mat = new Material(assetManager, material);
+                            } catch (Exception e) {
+                                System.out.println(e);
+                                mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+                            }
+                            try {
+                                mat.setTexture(texture_type, assetManager.loadTexture(texture));
+                            } catch (Exception e) {
+                                System.out.println(e);
+                            }
+                            geom.setLocalTranslation(loc_x, loc_y, loc_z);
+                            geom.setMaterial(mat);
+                            mapSpatials.put("special_" + special_name, geom);
+                            rootNode.attachChild(mapSpatials.get("special_" + special_name));
+                            bulletAppState.getPhysicsSpace().add(geom_physics);
+                        } else if (geometry.equals("sphere")) {
+                            float radius = Float.parseFloat(special.get("radius").toString());
+                            int radialSamples = Integer.parseInt(special.get("radialSamples").toString());
+                            int zSamples = Integer.parseInt(special.get("zSamples").toString());
+                            Sphere s = new Sphere(zSamples, radialSamples, radius);
+                            Geometry geom = new Geometry("Sphere", s);
+                            RigidBodyControl geom_physics = new RigidBodyControl(gravity);
+                            geom.addControl(geom_physics);
+                            Material mat = null;
+                            try {
+                                mat = new Material(assetManager, material);
+                            } catch (Exception e) {
+                                System.out.println(e);
+                                mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+                            }
+                            try {
+                                mat.setTexture(texture_type, assetManager.loadTexture(texture));
+                            } catch (Exception e) {
+                                System.out.println(e);
+                            }
+                            geom.setLocalTranslation(loc_x, loc_y, loc_z);
+                            geom.setMaterial(mat);
+                            mapSpatials.put("special_" + special_name, geom);
+                            rootNode.attachChild(mapSpatials.get("special_" + special_name));
+                            bulletAppState.getPhysicsSpace().add(geom_physics);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println(e);
+                }
+            }
+
+        }
 
         chasecam = new ChaseCamera(cam, mapSpatials.get("me_playermodel"), inputManager);
 
@@ -592,6 +715,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
     @Override
     public void simpleUpdate(float tpf) {
+        this.tpf = tpf;
         if (state.equals("inmultigame") || state.equals("inmultigame_pause")) {
             if (client.isConnected()) {
                 client.send(new PlayerDataMessage(my_playerdata));
@@ -626,18 +750,14 @@ public class Main extends SimpleApplication implements ClientStateListener {
             }
 
             if (walkDirection.lengthSquared() == 0) {
-                // if (!"stand".equals(animationChannel.getAnimationName())) {
-                //     animationChannel.setAnim("stand", 1f);
-                // }
+                setAnimation("Stand");
             } else {
                 character.setViewDirection(walkDirection);
-                // if (airTime > .3f) {
-                //     if (!"stand".equals(animationChannel.getAnimationName())) {
-                //         animationChannel.setAnim("stand");
-                //     }
-                // } else if (!"Walk".equals(animationChannel.getAnimationName())) {
-                //     animationChannel.setAnim("Walk", 0.7f);
-                // }
+                if (airTime > .3f) {
+                    setAnimation("Stand");
+                } else {
+                    setAnimation("Walk");
+                }
             }
 
             walkDirection.multLocal(25f).multLocal(tpf);
@@ -675,18 +795,14 @@ public class Main extends SimpleApplication implements ClientStateListener {
             }
 
             if (walkDirection.lengthSquared() == 0) {
-                // if (!"stand".equals(animationChannel.getAnimationName())) {
-                //     animationChannel.setAnim("stand", 1f);
-                // }
+                setAnimation("Stand");
             } else {
                 character.setViewDirection(walkDirection);
-                // if (airTime > .3f) {
-                //     if (!"stand".equals(animationChannel.getAnimationName())) {
-                //         animationChannel.setAnim("stand");
-                //     }
-                // } else if (!"Walk".equals(animationChannel.getAnimationName())) {
-                //     animationChannel.setAnim("Walk", 0.7f);
-                // }
+                if (airTime > .3f) {
+                    setAnimation("Stand");
+                } else {
+                    setAnimation("Walk");
+                }
             }
 
             walkDirection.multLocal(25f).multLocal(tpf);
@@ -758,14 +874,16 @@ public class Main extends SimpleApplication implements ClientStateListener {
             guiNode.detachChild(multiplayermenu);
             guiNode.attachChild(chatw);
             state = "inmultigame";
+            
+            guiNode.attachChild(statbar);
 
             CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 2f);
-            character = new CharacterControl(capsuleShape, 0.01f);
+            character = new CharacterControl(capsuleShape, 0.09f);
             dataManager.getEntityData(client.getId()).addControl(character);
             character.warp(new Vector3f(0.0f, 60f, 0.0f));
-            character.setGravity(10f);
-            character.setJumpSpeed(20f);
-
+            character.setGravity(40f);
+            character.setJumpSpeed(15f);
+            
             chasecam = new ChaseCamera(cam, dataManager.getEntityData(client.getId()), inputManager);
         } catch (IOException ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
@@ -788,16 +906,77 @@ public class Main extends SimpleApplication implements ClientStateListener {
             }
 
             for (int key : dataManager.getPlayerIdList()) {
+                rootNode.detachChild(dataManager.getEntityData(key));
                 dataManager.removePlayer(key);
             }
 
             bulletAppState.getPhysicsSpace().removeAll(mapSpatials.get("terrain"));
 
+            guiNode.detachChild(statbar);
+            
             stateManager.detach(bulletAppState);
-            rootNode.detachAllChildren();
             mapSpatials.clear();
             dataManager = null;
             System.out.println("Connection to [" + ip.getText() + ":" + port.getText() + "] closed. Thank for connection.");
         }
     }
+
+    private void setAnimControls(Spatial spatial) {
+        if (spatial == null) {
+            if (animControls != null) {
+                for (Iterator<AnimControl> it = animControls.iterator(); it.hasNext();) {
+                    AnimControl animControl = it.next();
+                    animControl.clearChannels();
+                }
+            }
+            animControls = null;
+            animChannels = null;
+            return;
+        }
+        SceneGraphVisitorAdapter visitor = new SceneGraphVisitorAdapter() {
+
+            @Override
+            public void visit(Geometry geom) {
+                super.visit(geom);
+                checkForAnimControl(geom);
+            }
+
+            @Override
+            public void visit(Node geom) {
+                super.visit(geom);
+                checkForAnimControl(geom);
+            }
+
+            private void checkForAnimControl(Spatial geom) {
+                AnimControl control = geom.getControl(AnimControl.class);
+                if (control == null) {
+                    return;
+                }
+                if (animControls == null) {
+                    animControls = new LinkedList<AnimControl>();
+                }
+                if (animChannels == null) {
+                    animChannels = new LinkedList<AnimChannel>();
+                }
+
+                animControls.add(control);
+                animChannels.add(control.createChannel());
+            }
+        };
+        spatial.depthFirstTraversal(visitor);
+    }
+
+    private void setAnimation(String name) {
+        if (animChannels != null) {
+            for (Iterator<AnimChannel> it = animChannels.iterator(); it.hasNext();) {
+                AnimChannel animChannel = it.next();
+                if (animChannel.getAnimationName() == null || !animChannel.getAnimationName().equals(name)) {
+                    animChannel.setAnim(name);
+                    if (animChannel.getControl().getAnim(name) != null) {
+                    }
+                }
+            }
+        }
+    }
+
 }

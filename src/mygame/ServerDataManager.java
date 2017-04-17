@@ -5,6 +5,8 @@
  */
 package mygame;
 
+import com.jme3.animation.AnimChannel;
+import com.jme3.animation.AnimControl;
 import com.jme3.asset.AssetManager;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.bullet.BulletAppState;
@@ -15,9 +17,15 @@ import com.jme3.font.BitmapText;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
+import com.jme3.scene.SceneGraphVisitorAdapter;
 import com.jme3.scene.Spatial;
+import com.simsilica.lemur.ProgressBar;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -31,6 +39,10 @@ public class ServerDataManager {
     private HashMap<Integer, PlayerData> player = new HashMap<Integer, PlayerData>();
     private HashMap<Integer, Spatial> entities = new HashMap<Integer, Spatial>();
     private HashMap<Integer, BitmapText> headtext = new HashMap<Integer, BitmapText>();
+    private HashMap<Integer, List<AnimControl>> animControls = new HashMap<Integer, List<AnimControl>>();
+    private HashMap<Integer, List<AnimChannel>> animChannels = new HashMap<Integer, List<AnimChannel>>();
+    private HashMap<Integer, Float> airTimes = new HashMap<Integer, Float>();
+    private ProgressBar healthbar;
     private AssetManager assetManager;
     private int myId;
     private BulletAppState bulletAppState;
@@ -66,7 +78,7 @@ public class ServerDataManager {
                 }
             });
         }
-        if(headtext.containsKey(id)){
+        if (headtext.containsKey(id)) {
             main.enqueue(new Callable() {
                 @Override
                 public Object call() throws Exception {
@@ -136,17 +148,41 @@ public class ServerDataManager {
                 entities.get(id).getControl(CharacterControl.class).warp(data.getLocation());
                 entities.get(id).getControl(CharacterControl.class).setViewDirection(data.getViewDirection());
                 entities.get(id).setLocalRotation(data.getRotation());
-                
-                
-                
+
+                if (myId != id) {
+                    Vector3f walkDirection = entities.get(id).getControl(CharacterControl.class).getWalkDirection();
+                    Vector3f viewDirection = entities.get(id).getControl(CharacterControl.class).getWalkDirection();
+                    if (airTimes.containsKey(id) == false) {
+                        airTimes.put(id, 0f);
+                    }
+                    if (!entities.get(id).getControl(CharacterControl.class).onGround()) {
+                        airTimes.put(id, airTimes.get(id) + main.tpf);
+                    } else {
+                        airTimes.put(id, 0f);
+                    }
+                    if (walkDirection.lengthSquared() == 0) {
+                        setAnimation(id, "Stand");
+                    } else {
+                        entities.get(id).getControl(CharacterControl.class).setViewDirection(walkDirection);
+                        if (airTimes.get(id) > .3f) {
+                            setAnimation(id, "Stand");
+                        } else {
+                            setAnimation(id, "Walk");
+                        }
+                    }
+                }
+
                 BoundingBox box = (BoundingBox) entities.get(id).getWorldBound();
                 Vector3f extent = box.getExtent(null);
                 BoundingBox box2 = (BoundingBox) headtext.get(id).getWorldBound();
-                float x = (box2.getXExtent()/2)*(-1);
+                float x = (box2.getXExtent() / 2) * (-1);
                 Vector3f height = new Vector3f(x, extent.y + 1, 0);
                 headtext.get(id).setLocalTranslation(entities.get(id).getLocalTranslation().add(height));
                 headtext.get(id).lookAt(cam.getLocation(), Vector3f.UNIT_Y);
-                
+
+                if(myId == id){
+                    main.health.setProgressPercent(data.getHealth()/100);
+                }
                 
                 return null;
             }
@@ -170,11 +206,12 @@ public class ServerDataManager {
         headtext.put(id, loadText(data.getLocation(), data.getName(), height));
 
         if (myId != id) {
+            setAnimControls(id, entities.get(id));
             CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(0.6f, 1.8f);
-            CharacterControl control = new CharacterControl(capsuleShape, 0.01f);
+            CharacterControl control = new CharacterControl(capsuleShape, 0.09f);
             entities.get(id).addControl(control);
-            control.setGravity(10f);
-            control.setJumpSpeed(20f);
+            control.setGravity(40f);
+            control.setJumpSpeed(15f);
             control.warp(data.getLocation());
         }
 
@@ -201,8 +238,66 @@ public class ServerDataManager {
         text.setText(text_string);
         text.setSize(0.3f);
         BoundingBox box = (BoundingBox) text.getWorldBound();
-        float x = (box.getXExtent()/2)*(-1);
+        float x = (box.getXExtent() / 2) * (-1);
         text.setLocalTranslation(location.add(add.add(new Vector3f(x, 0, 0))));
         return text;
+    }
+
+    private void setAnimControls(final int id, Spatial spatial) {
+        if (spatial == null) {
+            if (animControls.get(id) != null) {
+                for (Iterator<AnimControl> it = animControls.get(id).iterator(); it.hasNext();) {
+                    AnimControl animControl = it.next();
+                    animControl.clearChannels();
+                }
+            }
+            animControls.put(id, null);
+            animChannels.put(id, null);
+            return;
+        }
+        SceneGraphVisitorAdapter visitor = new SceneGraphVisitorAdapter() {
+
+            @Override
+            public void visit(Geometry geom) {
+                super.visit(geom);
+                checkForAnimControl(geom);
+            }
+
+            @Override
+            public void visit(Node geom) {
+                super.visit(geom);
+                checkForAnimControl(geom);
+            }
+
+            private void checkForAnimControl(Spatial geom) {
+                AnimControl control = geom.getControl(AnimControl.class);
+                if (control == null) {
+                    return;
+                }
+                if (animControls.get(id) == null) {
+                    animControls.put(id, new LinkedList<AnimControl>());
+                }
+                if (animChannels.get(id) == null) {
+                    animChannels.put(id, new LinkedList<AnimChannel>());
+                }
+
+                animControls.get(id).add(control);
+                animChannels.get(id).add(control.createChannel());
+            }
+        };
+        spatial.depthFirstTraversal(visitor);
+    }
+
+    private void setAnimation(int id, String name) {
+        if (animChannels.get(id) != null) {
+            for (Iterator<AnimChannel> it = animChannels.get(id).iterator(); it.hasNext();) {
+                AnimChannel animChannel = it.next();
+                if (animChannel.getAnimationName() == null || !animChannel.getAnimationName().equals(name)) {
+                    animChannel.setAnim(name);
+                    if (animChannel.getControl().getAnim(name) != null) {
+                    }
+                }
+            }
+        }
     }
 }
