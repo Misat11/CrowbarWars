@@ -1,5 +1,8 @@
 package mygame;
 
+import misat11.core.server.messages.ServerInfoMessage;
+import misat11.core.server.messages.TextMessage;
+import misat11.core.server.messages.PlayerDataMessage;
 import com.jme3.animation.AnimChannel;
 import com.jme3.animation.AnimControl;
 import com.jme3.app.SimpleApplication;
@@ -22,7 +25,6 @@ import com.jme3.scene.Node;
 import com.jme3.scene.SceneGraphVisitorAdapter;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.Cylinder;
 import com.jme3.scene.shape.Sphere;
 import com.simsilica.lemur.Axis;
 import com.simsilica.lemur.GuiGlobals;
@@ -103,7 +105,7 @@ public class Main extends SimpleApplication implements ClientStateListener {
 
     public String gameversion = "CrowbarWars Multiplayer 0.1 beta";
     public String gamehashcode = "crbar_multi";
-    public int protocol = 1;
+    public int protocol = 2;
 
     public List<AnimControl> animControls;
     public List<AnimChannel> animChannels;

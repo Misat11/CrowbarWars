@@ -5,6 +5,10 @@
  */
 package mygame;
 
+import misat11.core.server.messages.JoinLeaveMessage;
+import misat11.core.server.messages.ServerInfoMessage;
+import misat11.core.server.messages.PlayerListMessage;
+import misat11.core.server.messages.TextMessage;
 import com.jme3.network.Client;
 import com.jme3.network.Message;
 import com.jme3.network.MessageListener;
