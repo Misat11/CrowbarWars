@@ -1,4 +1,4 @@
-package mygame;
+package misat11.core.json;
  
 import java.io.FileReader;
 import org.json.simple.JSONObject;
