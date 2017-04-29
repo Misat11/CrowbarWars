@@ -1,0 +1,26 @@
+{
+    "base.launcher.title": "Herní Launcher",
+    "base.launcher.start": "Spustit hru",
+    "base.launcher.exit": "Opustit",
+    "base.launcher.settings": "Nastavení",
+    "base.launcher.back": "Zpět",
+    "base.launcher.next": "Další",
+    "base.launcher.video.title": "Nastavení zobrazení",
+    "base.launcher.video.screen_resolution": "Rozlišení obrazovky",
+    "base.launcher.video.fps": "Maximální snímková frekvence",
+    "base.launcher.video.gamma_correction": "Gamma korekce",
+    "base.launcher.video.swap_buffers": "Swap Buffers",
+    "base.launcher.video.fullscreen": "Celá obrazovka",
+    "base.launcher.video.fullscreen_warning": "Nepoužívejte FullScreen mód při rozlišení 1920x1080, může dojít ke zhroucení.",
+    "base.launcher.language.title": "Jazyk",
+    "base.launcher.language.save": "Změnit jazyk",
+    "base.launcher.restoredefaults": "Obnovit tovární nastavení",
+    "base.launcher.controls.title": "Ovládání",
+    "base.launcher.controls.left": "Vlevo",
+    "base.launcher.controls.right": "Vpravo",
+    "base.launcher.controls.up": "Dopředu",
+    "base.launcher.controls.down": "Dozadu",
+    "base.launcher.controls.jump": "Skok",
+    "base.launcher.controls.attack": "Útok"
+}
+

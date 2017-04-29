@@ -55,7 +55,7 @@ public class ClientDataManager {
     }
 
     public boolean isTherePlayerWithId(int id) {
-        return player.containsKey(id);
+        return player.containsKey(id) && playerObjects.containsKey(id) && characters.containsKey(id);
     }
 
     public HashMap getPlayerList() {
@@ -86,7 +86,7 @@ public class ClientDataManager {
         Set<Integer> oldPlayers = this.player.keySet();
         this.player.putAll(player);
         for (int old : oldPlayers) {
-            if (this.player.containsKey(old) == false) {
+            if (player.containsKey(old) == false) {
                 removePlayer(old);
             }
         }
@@ -96,18 +96,19 @@ public class ClientDataManager {
     private void removePlayer(int id) {
         if (playerObjects.containsKey(id)) {
             final int objid = playerObjects.get(id);
+            if (characters.containsKey(id)) {
+                main.getObject(objid).getSpatial().removeControl(characters.get(id).getControl());
+                characters.remove(id);
+            }
             main.enqueue(new Callable() {
                 @Override
                 public Object call() throws Exception {
-                    main.detachObject(objid);
                     main.getBulletAppState().getPhysicsSpace().removeAll(main.objects.get(objid).getSpatial());
                     return null;
                 }
             });
+            main.detachObject(objid);
             playerObjects.remove(id);
-        }
-        if (player.containsKey(id)) {
-            player.remove(id);
         }
         if (headtext.containsKey(id)) {
             main.detachObject(headtext.get(id));
@@ -129,57 +130,68 @@ public class ClientDataManager {
     }
 
     private void updatePlayerEntity(final int id, final PlayerData data) {
-        if (playerObjects.containsKey(id) == false) {
-            final int obj_id = main.gameRegisterObject(new SimpleSpatialObject(main.getAssetManager().loadModel(data.getModelAsset())));
-            main.attachObject(obj_id);
-            playerObjects.put(id, obj_id);
-        }
-        if (characters.containsKey(id) == false) {
-            characters.put(id, new SimpleCharacter(main, playerObjects.get(id)));
-        }
-        if (headtext.containsKey(id) == false) {
-            BoundingBox box = (BoundingBox) main.getObject(playerObjects.get(id)).getSpatial().getWorldBound();
-            Vector3f extent = box.getExtent(null);
-            Vector3f height = new Vector3f(0, extent.y + 1, 0);
-            headtext.put(id, main.gameRegisterObject(new HeadText(main, main.getGuiFont(), main.getObject(playerObjects.get(id)).getSpatial().getLocalTranslation(), player.get(id).getName(), height)));
-            main.attachObject(headtext.get(id));
-        }
-
-        AbstractObject obj = main.getObject(playerObjects.get(id));
-
-        if (myId != id) {
-
-            characters.get(id).setWalkDirection(data.getWalkDirection());
-            characters.get(id).warp(data.getLocation());
-            characters.get(id).setViewDirection(data.getViewDirection());
-
-            Vector3f walkDirection = obj.getSpatial().getControl(CharacterControl.class).getWalkDirection();
-            Vector3f viewDirection = obj.getSpatial().getControl(CharacterControl.class).getWalkDirection();
-            if (airTimes.containsKey(id) == false) {
-                airTimes.put(id, 0f);
-            }
-            if (!obj.getSpatial().getControl(CharacterControl.class).onGround()) {
-                airTimes.put(id, airTimes.get(id) + main.tpf);
-            } else {
-                airTimes.put(id, 0f);
-            }
-            if (walkDirection.lengthSquared() == 0) {
-                characters.get(id).runAnimation("Stand");
-            } else {
-                obj.getSpatial().getControl(CharacterControl.class).setViewDirection(walkDirection);
-                if (airTimes.get(id) > .3f) {
-                    characters.get(id).runAnimation("Stand");
-                } else {
-                    characters.get(id).runAnimation("Walk");
+        main.enqueue(new Callable() {
+            @Override
+            public Object call() throws Exception {
+                if (playerObjects.containsKey(id) == false) {
+                    final int obj_id = main.gameRegisterObject(new SimpleSpatialObject(main.getAssetManager().loadModel(data.getModelAsset())));
+                    main.attachObject(obj_id);
+                    playerObjects.put(id, obj_id);
                 }
-            }
-        }
+                if (characters.containsKey(id) == false) {
+                    characters.put(id, new SimpleCharacter(main, playerObjects.get(id)));
+                }
+                if (headtext.containsKey(id) == false) {
+                    BoundingBox box
+                            = (BoundingBox) main.getObject(playerObjects.get(id)).getSpatial().getWorldBound();
+                    Vector3f extent = box.getExtent(null);
+                    Vector3f height = new Vector3f(0, extent.y + 1, 0);
+                    headtext.put(id,
+                            main.gameRegisterObject(new HeadText(main, main.getGuiFont(),
+                                    main.getObject(playerObjects.get(id)).getSpatial().getLocalTranslation(),
+                                    player.get(id).getName(), height)));
+                    main.attachObject(headtext.get(id));
+                }
+                AbstractObject obj = main.getObject(playerObjects.get(id));
 
-        BoundingBox box = (BoundingBox) main.getObject(playerObjects.get(id)).getSpatial().getWorldBound();
-        Vector3f extent = box.getExtent(null);
-        Vector3f height = new Vector3f(0, extent.y + 1, 0);
-        HeadText head_text = (HeadText) main.getObject(headtext.get(id));
-        head_text.updateLocation(obj.getSpatial().getLocalTranslation(), height);
-        head_text.lookAt(main.getCamera().getLocation());
+                if (myId != id) {
+
+                    characters.get(id).setWalkDirection(data.getWalkDirection());
+                    characters.get(id).warp(data.getLocation());
+                    characters.get(id).setViewDirection(data.getViewDirection());
+
+                    Vector3f walkDirection = characters.get(id).getControl().getWalkDirection();
+                    Vector3f viewDirection = characters.get(id).getControl().getWalkDirection();
+                    if (airTimes.containsKey(id) == false) {
+                        airTimes.put(id, 0f);
+                    }
+                    if (!characters.get(id).getControl().onGround()) {
+                        airTimes.put(id, airTimes.get(id) + main.tpf);
+                    } else {
+                        airTimes.put(id, 0f);
+                    }
+                    if (walkDirection.lengthSquared() == 0) {
+                        characters.get(id).runAnimation("Stand");
+                    } else {
+                        characters.get(id).setViewDirection(walkDirection);
+                        if (airTimes.get(id) > .3f) {
+                            characters.get(id).runAnimation("Stand");
+                        } else {
+                            characters.get(id).runAnimation("Walk");
+                        }
+                    }
+                }
+                BoundingBox box = (BoundingBox) main.getObject(playerObjects.get(id)).getSpatial().getWorldBound();
+                Vector3f extent = box.getExtent(null);
+                Vector3f height = new Vector3f(0, extent.y + 1, 0);
+                HeadText head_text = (HeadText) main.getObject(headtext.get(id));
+                head_text.updateLocation(obj.getSpatial().getLocalTranslation(),
+                        height);
+                head_text.lookAt(main.getCamera().getLocation());
+                return null;
+            }
+
+        });
+
     }
 }

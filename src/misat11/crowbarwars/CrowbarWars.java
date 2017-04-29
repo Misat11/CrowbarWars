@@ -13,11 +13,6 @@ import misat11.crowbarwars.events.MainMenuEvent;
  * @author misat11
  */
 public class CrowbarWars extends AbstractCore {
-
-    public static void main(String[] args){
-        CrowbarWars main = new CrowbarWars();
-        main.start();
-    }
     
     @Override
     public void gameInit() {

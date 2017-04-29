@@ -57,12 +57,12 @@ public class CharacterMove extends AbstractActionOnKey {
 
     @Override
     public void construct() {
-        main.getInputManager().addMapping("CharacterMove_LEFT", new KeyTrigger(CharacterBaseKeys.LEFT));
-        main.getInputManager().addMapping("CharacterMove_RIGHT", new KeyTrigger(CharacterBaseKeys.RIGHT));
-        main.getInputManager().addMapping("CharacterMove_UP", new KeyTrigger(CharacterBaseKeys.UP));
-        main.getInputManager().addMapping("CharacterMove_DOWN", new KeyTrigger(CharacterBaseKeys.DOWN));
-        main.getInputManager().addMapping("CharacterMove_JUMP", new KeyTrigger(CharacterBaseKeys.JUMP));
-        main.getInputManager().addMapping("CharacterMove_ATTACK", new KeyTrigger(CharacterBaseKeys.ATTACK));
+        main.getInputManager().addMapping("CharacterMove_LEFT", new KeyTrigger(main.getControlSettings().getLEFT()));
+        main.getInputManager().addMapping("CharacterMove_RIGHT", new KeyTrigger(main.getControlSettings().getRIGHT()));
+        main.getInputManager().addMapping("CharacterMove_UP", new KeyTrigger(main.getControlSettings().getUP()));
+        main.getInputManager().addMapping("CharacterMove_DOWN", new KeyTrigger(main.getControlSettings().getDOWN()));
+        main.getInputManager().addMapping("CharacterMove_JUMP", new KeyTrigger(main.getControlSettings().getJUMP()));
+        main.getInputManager().addMapping("CharacterMove_ATTACK", new KeyTrigger(main.getControlSettings().getATTACK()));
         main.getInputManager().addListener(this, "CharacterMove_LEFT", "CharacterMove_RIGHT", "CharacterMove_UP", "CharacterMove_DOWN", "CharacterMove_JUMP", "CharacterMove_ATTACK");
     }
 
