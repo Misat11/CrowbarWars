@@ -38,6 +38,25 @@ public class JSONWrite {
             }
         }
     }
+    
+    @SuppressWarnings("unchecked")
+    public static void main(String filename, String key, String value) {
+        BufferedWriter writer = null;
+        try {
+            File file = new File(filename);
+            JSONObject json = JSONLoader.main(filename);
+            json.put(key, value);
+            writer = new BufferedWriter(new FileWriter(file, false));
+            writer.write(json.toJSONString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                writer.close();
+            } catch (Exception e) {
+            }
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public static void main(String filename, String string) {

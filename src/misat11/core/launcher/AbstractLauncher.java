@@ -227,6 +227,12 @@ public abstract class AbstractLauncher {
         settings.setFullscreen(Boolean.parseBoolean(json.get("fullscreen").toString()));
         settings.setSwapBuffers(Boolean.parseBoolean(json.get("swap_buffers").toString()));
         settings.setFrameRate(Integer.parseInt(json.get("fps").toString()));
+        controlSettings.setUP(Integer.parseInt(json.get("key_up").toString()));
+        controlSettings.setDOWN(Integer.parseInt(json.get("key_down").toString()));
+        controlSettings.setLEFT(Integer.parseInt(json.get("key_left").toString()));
+        controlSettings.setRIGHT(Integer.parseInt(json.get("key_right").toString()));
+        controlSettings.setJUMP(Integer.parseInt(json.get("key_jump").toString()));
+        controlSettings.setATTACK(Integer.parseInt(json.get("key_attack").toString()));
         langManager = new LanguageManager();
         langManager.addLanguageData("/misat11/core/language/baseen.lang");
         if (!json.get("language").equals("EN")) {
