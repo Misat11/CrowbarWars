@@ -10,7 +10,13 @@ import misat11.core.camera.ThirdPersonView;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.network.Client;
 import com.jme3.network.Network;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.util.HashMap;
+import java.util.Map.Entry;
 import misat11.core.AbstractCore;
 import misat11.core.Utils;
 import misat11.core.keyboard.MultiplayerKeys;
@@ -23,6 +29,7 @@ import misat11.core.object.GravityObject;
 import misat11.core.object.SimpleSpatialObject;
 import misat11.core.server.client.ClientDataManager;
 import misat11.core.server.client.ClientListener;
+import misat11.core.server.messages.ModelInfo;
 import misat11.core.server.messages.PlayerSettingsMessage;
 import misat11.core.server.messages.ServerInfoMessage;
 import misat11.core.server.messages.TextMessage;
@@ -67,6 +74,8 @@ public class ConnectionEvent extends AbstractEvent {
     private PlayerSettingsMessage settingsMessage;
 
     private AbstractView view;
+    
+    private HashMap<String, ModelInfo> modelsInfo;
 
     public ConnectionEvent(AbstractCore main, String ip, int port, String nickname) {
         super(main);
@@ -133,6 +142,24 @@ public class ConnectionEvent extends AbstractEvent {
                     break;
                 }
             }
+            
+            modelsInfo = serverInfoMessage.getModelsInfo();
+
+            for (Entry<String, ModelInfo> model : serverInfoMessage.getModelsInfo().entrySet()) {
+                if (!main.getModelsManager().containsModel(model.getValue())) {
+                    if (model.getValue().getUrl().equals("none")) {
+                        client.close();
+                        return;
+                    } else {
+                        URL website = new URL(model.getValue().getUrl());
+                        ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+                        String url = "DownloadedContent/" + model.getValue().getAuthor() + "-" + model.getValue().getName() + "-" + Integer.toString(model.getValue().getVersion()) + ".j3o";
+                        FileOutputStream fos = new FileOutputStream(main.getSaveurl() + url);
+                        fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+                        main.getModelsManager().addModel(model.getValue(), url);
+                    }
+                }
+            }
 
             client.send(settingsMessage);
 
@@ -144,11 +171,11 @@ public class ConnectionEvent extends AbstractEvent {
 
             main.getInputManager().setCursorVisible(false);
 
-            int terrain_id = main.gameRegisterObject(new GravityObject(main, new SimpleSpatialObject(main.getAssetManager().loadModel(serverInfoMessage.getWorldScene())), new RigidBodyControl(0f)));
+            int terrain_id = main.gameRegisterObject(new GravityObject(main, new SimpleSpatialObject(main.getAssetManager().loadModel(main.getModelsManager().getUrl(modelsInfo.get(serverInfoMessage.getWorldScene())))), new RigidBodyControl(0f)));
             main.attachObject(terrain_id);
             System.out.println("Connection succesfully, waiting for updates");
-        } catch (IOException ex) {
-
+        } catch (Exception e) {
+            System.out.println(e);
         }
     }
 
@@ -231,6 +258,11 @@ public class ConnectionEvent extends AbstractEvent {
 
     public AbstractView getView() {
         return view;
+    }
+    
+    public String getModelUrl(String internalServerName){
+        ModelInfo model = modelsInfo.get(internalServerName);
+        return main.getModelsManager().getUrl(model);
     }
 
 }
