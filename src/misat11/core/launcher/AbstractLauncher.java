@@ -8,6 +8,7 @@ package misat11.core.launcher;
 import com.jme3.system.AppSettings;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -61,6 +62,7 @@ public abstract class AbstractLauncher {
         preInit();
         initWindow();
         init();
+        postInit();
         constructWindow();
         update();
     }
@@ -86,16 +88,16 @@ public abstract class AbstractLauncher {
     public abstract void init();
 
     public abstract String getSaveDirectoryName();
-    
+
     public abstract void load();
 
-    public void save(String file, HashMap<String, String> write) {
+    public void save(String file, HashMap<String, Object> write) {
         String userhome = System.getProperty("user.home");
         String fileurl = userhome + "/" + getSaveDirectoryName() + "/" + file;
         JSONWrite.main(fileurl, write);
     }
-    
-    public void reloadLauncher(){
+
+    public void reloadLauncher() {
         restart_request = true;
     }
 
@@ -163,7 +165,7 @@ public abstract class AbstractLauncher {
         String fileurl = userhome + "/" + getSaveDirectoryName() + "/init.data";
         JSONCreate.main(fileurl);
         old_json = JSONLoader.main(fileurl);
-        HashMap<String, String> values = new HashMap<String, String>();
+        HashMap<String, Object> values = new HashMap<String, Object>();
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/YYYY HH:mm:ss");
         values.put("lastseen", sdf.format(cal.getTime()));
@@ -242,6 +244,7 @@ public abstract class AbstractLauncher {
 
             }
         }
+
     }
 
     public Resolution getValidResolution(String string) {
@@ -262,6 +265,18 @@ public abstract class AbstractLauncher {
             }
         }
         return 0;
+    }
+
+    private void postInit() {
+        JSONCreate.main(System.getProperty("user.home") + "/" + getSaveDirectoryName() + "/" + "downloaded.data", "[]");
+        
+        File downloadedcontent = new File(System.getProperty("user.home") + "/" + getSaveDirectoryName() + "/" + "DownloadedContent");
+        downloadedcontent.mkdir();
+
+        File mods = new File(System.getProperty("user.home") + "/" + getSaveDirectoryName() + "/" + "Mods");
+        mods.mkdir();
+
+        gameCore.setSaveurl(System.getProperty("user.home") + "/" + getSaveDirectoryName() + "/");
     }
 
     public class LauncherWindow extends JFrame {
@@ -294,7 +309,7 @@ public abstract class AbstractLauncher {
     public void changeLanguageCodeByName(String locale) {
         for (Map.Entry<String, String> code : langManager.getLangCodes().entrySet()) {
             if (code.getValue().equals(locale)) {
-                HashMap<String, String> newsave = new HashMap<String, String>();
+                HashMap<String, Object> newsave = new HashMap<String, Object>();
                 newsave.put("language", code.getKey());
                 save("init.data", newsave);
                 return;

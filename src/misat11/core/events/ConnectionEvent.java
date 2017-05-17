@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import misat11.core.AbstractCore;
 import misat11.core.Utils;
+import misat11.core.json.JSONLoader;
+import misat11.core.json.JSONWrite;
 import misat11.core.keyboard.MultiplayerKeys;
 import misat11.core.keyboard.MultiplayerMove;
 import misat11.core.menu.ChatInput;
@@ -74,7 +76,7 @@ public class ConnectionEvent extends AbstractEvent {
     private PlayerSettingsMessage settingsMessage;
 
     private AbstractView view;
-    
+
     private HashMap<String, ModelInfo> modelsInfo;
 
     public ConnectionEvent(AbstractCore main, String ip, int port, String nickname) {
@@ -142,7 +144,7 @@ public class ConnectionEvent extends AbstractEvent {
                     break;
                 }
             }
-            
+
             modelsInfo = serverInfoMessage.getModelsInfo();
 
             for (Entry<String, ModelInfo> model : serverInfoMessage.getModelsInfo().entrySet()) {
@@ -157,6 +159,7 @@ public class ConnectionEvent extends AbstractEvent {
                         FileOutputStream fos = new FileOutputStream(main.getSaveurl() + url);
                         fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
                         main.getModelsManager().addModel(model.getValue(), url);
+                        JSONWrite.writeIntoArray(main.getSaveurl() + "downloaded.data", "{\"name\":\"" + model.getValue().getName() + "\", \"author\":\"" + model.getValue().getAuthor() + "\", \"version\":\"" + Integer.toString(model.getValue().getVersion()) + "\", \"downloadUrl\":\"" + model.getValue().getUrl() + "\", \"savedUrl\":\"" + url + "\"}");
                     }
                 }
             }
@@ -259,8 +262,8 @@ public class ConnectionEvent extends AbstractEvent {
     public AbstractView getView() {
         return view;
     }
-    
-    public String getModelUrl(String internalServerName){
+
+    public String getModelUrl(String internalServerName) {
         ModelInfo model = modelsInfo.get(internalServerName);
         return main.getModelsManager().getUrl(model);
     }

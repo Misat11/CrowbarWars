@@ -7,6 +7,7 @@ package misat11.core.server.messages;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
+import java.util.HashMap; 
 
 /**
  *
@@ -14,21 +15,29 @@ import com.jme3.network.serializing.Serializable;
  */
 @Serializable
 public class ServerInfoMessage extends AbstractMessage {
+
     private String worldscene;
     private String servername;
-    
-    public ServerInfoMessage() {}
-    
-    public ServerInfoMessage(String worldscene, String servername) {
+    private HashMap<String, ModelInfo> info;
+
+    public ServerInfoMessage() {
+    }
+
+    public ServerInfoMessage(String worldscene, String servername, HashMap<String, ModelInfo> info) {
         this.worldscene = worldscene;
         this.servername = servername;
+        this.info = info;
     }
-    
+
     public String getWorldScene() {
         return worldscene;
     }
-    
+
     public String getServerName() {
         return servername;
+    }
+
+    public HashMap<String, ModelInfo> getModelsInfo() {
+        return info;
     }
 }

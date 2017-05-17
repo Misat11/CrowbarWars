@@ -31,4 +31,19 @@ public class JSONCreate {
             }
         }
     }
+    
+    @SuppressWarnings("unchecked")
+    public static void main(String file, String base) {
+        String userhome = System.getProperty("user.home");
+        File f = new File(file);
+        if ((f.exists() && !f.isDirectory()) == false) {
+            try {
+                f.getParentFile().mkdirs();
+                f.createNewFile();
+                JSONWrite.main(file, base);
+            } catch (IOException ex) {
+                Logger.getLogger(AbstractLauncher.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
 }

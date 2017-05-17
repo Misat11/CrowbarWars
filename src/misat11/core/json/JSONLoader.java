@@ -5,9 +5,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -25,6 +25,23 @@ public class JSONLoader {
             JSONObject jsonObject = (JSONObject) obj;
 
             return jsonObject;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+    
+    public static JSONArray loadArray(String file){
+        JSONParser parser = new JSONParser();
+
+        try {
+
+            Object obj = parser.parse(new FileReader(file));
+
+            JSONArray jsonArray = (JSONArray) obj;
+
+            return jsonArray;
         } catch (Exception e) {
             e.printStackTrace();
         }

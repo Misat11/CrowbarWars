@@ -149,7 +149,7 @@ public class CrowbarWarsLauncher extends AbstractLauncher {
                 String selected = (String) cb.getSelectedItem();
                 settings.setWidth(getValidResolution(selected).getWidth());
                 settings.setHeight(getValidResolution(selected).getHeight());
-                HashMap<String, String> newsave = new HashMap<String, String>();
+                HashMap<String, Object> newsave = new HashMap<String, Object>();
                 newsave.put("height", Integer.toString(getValidResolution(selected).getHeight()));
                 newsave.put("width", Integer.toString(getValidResolution(selected).getWidth()));
                 save("init.data", newsave);
@@ -166,7 +166,7 @@ public class CrowbarWarsLauncher extends AbstractLauncher {
                 JCheckBox cb = (JCheckBox) e.getSource();
                 boolean selected = cb.isSelected();
                 settings.setFullscreen(selected);
-                HashMap<String, String> newsave = new HashMap<String, String>();
+                HashMap<String, Object> newsave = new HashMap<String, Object>();
                 newsave.put("fullscreen", Boolean.toString(selected));
                 save("init.data", newsave);
 
@@ -182,7 +182,7 @@ public class CrowbarWarsLauncher extends AbstractLauncher {
                 JCheckBox cb = (JCheckBox) e.getSource();
                 boolean selected = cb.isSelected();
                 settings.setGammaCorrection(selected);
-                HashMap<String, String> newsave = new HashMap<String, String>();
+                HashMap<String, Object> newsave = new HashMap<String, Object>();
                 newsave.put("gamma_correction", Boolean.toString(selected));
                 save("init.data", newsave);
 
@@ -198,7 +198,7 @@ public class CrowbarWarsLauncher extends AbstractLauncher {
                 JCheckBox cb = (JCheckBox) e.getSource();
                 boolean selected = cb.isSelected();
                 settings.setSwapBuffers(selected);
-                HashMap<String, String> newsave = new HashMap<String, String>();
+                HashMap<String, Object> newsave = new HashMap<String, Object>();
                 newsave.put("swap_buffers", Boolean.toString(selected));
                 save("init.data", newsave);
 
@@ -225,7 +225,7 @@ public class CrowbarWarsLauncher extends AbstractLauncher {
                 }
                 fps_name.setText(langManager.get("Max FPS", "base.launcher.video.fps") + "(" + number + "):");
                 settings.setFrameRate(number);
-                HashMap<String, String> newsave = new HashMap<String, String>();
+                HashMap<String, Object> newsave = new HashMap<String, Object>();
                 newsave.put("fps", Integer.toString(number));
                 save("init.data", newsave);
             }

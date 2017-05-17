@@ -6,8 +6,8 @@
 package misat11.core;
 
 import com.jme3.app.LegacyApplication;
-import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AppState;
+import com.jme3.asset.plugins.FileLocator;
 import com.jme3.audio.AudioListenerState;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.font.BitmapFont;
@@ -22,7 +22,9 @@ import com.jme3.system.AppSettings;
 import com.jme3.system.JmeSystem;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
+import java.io.File;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,10 +32,15 @@ import java.util.concurrent.TimeUnit;
 import misat11.core.events.AbstractEvent;
 import misat11.core.events.LoadEvent;
 import misat11.core.gamelogic.LogicThread;
+import misat11.core.json.JSONCreate;
+import misat11.core.json.JSONLoader;
 import misat11.core.keyboard.AbstractActionOnKey;
 import misat11.core.keyboard.ControlSettings;
 import misat11.core.menu.AbstractPanel;
 import misat11.core.object.AbstractObject;
+import misat11.core.server.messages.ModelInfo;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -51,6 +58,8 @@ public abstract class AbstractCore extends LegacyApplication {
 
     private ControlSettings controlSettings = new ControlSettings();
 
+    private String saveurl;
+
     private boolean debug = false;
 
     private Node rootNode = new Node("Root Node");
@@ -58,9 +67,11 @@ public abstract class AbstractCore extends LegacyApplication {
     protected BitmapText fpsText;
     protected BitmapFont guiFont;
     protected boolean showSettings = false;
-    
+
     private ScheduledExecutorService exec;
     private LogicThread gameLogic;
+
+    protected ModelsManager modelsManager;
 
     public AbstractCore() {
         this(new AudioListenerState());
@@ -138,6 +149,8 @@ public abstract class AbstractCore extends LegacyApplication {
     public void initialize() {
         super.initialize();
 
+        modelsManager = new ModelsManager();
+
         guiFont = loadGuiFont();
 
         guiNode.setQueueBucket(RenderQueue.Bucket.Gui);
@@ -149,16 +162,26 @@ public abstract class AbstractCore extends LegacyApplication {
 
         inputManager.setCursorVisible(true);
 
-        inputManager.deleteMapping(SimpleApplication.INPUT_MAPPING_EXIT);
-
         BaseStyles.loadGlassStyle();
 
         GuiGlobals.getInstance().getStyles().setDefaultStyle("glass");
 
+        JSONArray downloadedContent = JSONLoader.loadArray(saveurl + "downloaded.data");
+        Iterator downloadedIterator = downloadedContent.iterator();
+
+        while (downloadedIterator.hasNext()) {
+            JSONObject downloaded = (JSONObject) downloadedIterator.next();
+            ModelInfo info = new ModelInfo(downloaded.get("name").toString(), downloaded.get("author").toString(), downloaded.get("downloadUrl").toString(), Integer.parseInt(downloaded.get("version").toString()));
+            String url = downloaded.get("savedUrl").toString();
+            modelsManager.addModel(info, url);
+        }
+
+        assetManager.registerLocator(saveurl, FileLocator.class);
+
         bulletAppState = new BulletAppState();
-        
+
         gameLogic = new LogicThread(this);
-        
+
         exec = Executors.newSingleThreadScheduledExecutor();
         exec.scheduleAtFixedRate(gameLogic, 0, 60, TimeUnit.MILLISECONDS);
 
@@ -397,11 +420,24 @@ public abstract class AbstractCore extends LegacyApplication {
     @Override
     public void destroy() {
         super.destroy();
-        
+
         exec.shutdown();
     }
 
     public LogicThread getGameLogic() {
         return gameLogic;
     }
+
+    public ModelsManager getModelsManager() {
+        return modelsManager;
+    }
+
+    public String getSaveurl() {
+        return saveurl;
+    }
+
+    public void setSaveurl(String saveurl) {
+        this.saveurl = saveurl;
+    }
+
 }

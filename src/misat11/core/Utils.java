@@ -12,6 +12,7 @@ import misat11.core.server.messages.ChangeObjectLocationMessage;
 import misat11.core.server.messages.ClientHasMessage;
 import misat11.core.server.messages.DespawnEntityMessage;
 import misat11.core.server.messages.DespawnObjectMessage;
+import misat11.core.server.messages.ModelInfo;
 import misat11.core.server.messages.MoveMessage;
 import misat11.core.server.messages.ServerInfoMessage;
 import misat11.core.server.messages.TextMessage;
@@ -26,7 +27,7 @@ import misat11.core.server.messages.SpawnObjectMessage;
  */
 public class Utils {
     public static final int BASE_PORT = 4444;
-    public static final int PROTOCOL = 3;
+    public static final int PROTOCOL = 4;
     public static final String BASE_GAMEHASHCODE = "crbar_multi";
     
     public static void initSerializer(){
@@ -43,5 +44,6 @@ public class Utils {
         Serializer.registerClass(ClientHasMessage.class);
         Serializer.registerClass(CameraLookMessage.class);
         Serializer.registerClass(ServerWantClientHasMessage.class);
+        Serializer.registerClass(ModelInfo.class);
     }
 }
