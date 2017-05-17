@@ -44,12 +44,14 @@ public class MultiplayerKeys extends AbstractActionOnKey {
                 event.chatwindow.getContainer().setAlpha(1.0f);
                 main.attachPanel(event.chatinput_id);
                 event.setChatopen(true);
+                main.getInputManager().setCursorVisible(true);
             }
         } else if (name.equals("MULTIPLAYER_ESCAPE") && !isPressed) {
             if (event.isChatopen() == true && event.isPaused() == false) {
                 event.chatwindow.getContainer().setAlpha(0.3f);
                 main.detachPanel(event.chatinput_id);
                 event.setChatopen(false);
+                main.getInputManager().setCursorVisible(false);
             } else {
                 event.pauseOrUnpauseGame();
             }

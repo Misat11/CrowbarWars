@@ -7,24 +7,14 @@ package misat11.core.server.messages;
 
 import com.jme3.network.AbstractMessage;
 import com.jme3.network.serializing.Serializable;
-import java.util.HashMap;
 
 /**
  *
  * @author misat11
  */
 @Serializable
-public class PlayerListMessage extends AbstractMessage {
-    private HashMap players;
-    
-    public PlayerListMessage() {}
-    
-    public PlayerListMessage(HashMap players) {
-        this.players = players;
+public class ServerWantClientHasMessage extends AbstractMessage {
+
+    public ServerWantClientHasMessage() {
     }
-    
-    public HashMap getPlayerList() {
-        return players;
-    }
-    
 }

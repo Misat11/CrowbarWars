@@ -5,16 +5,16 @@
  */
 package misat11.core.events;
 
+import misat11.core.camera.AbstractView;
+import misat11.core.camera.ThirdPersonView;
 import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.math.Quaternion;
-import com.jme3.math.Vector3f;
 import com.jme3.network.Client;
 import com.jme3.network.Network;
 import java.io.IOException;
 import misat11.core.AbstractCore;
 import misat11.core.Utils;
-import misat11.core.keyboard.CharacterMove;
 import misat11.core.keyboard.MultiplayerKeys;
+import misat11.core.keyboard.MultiplayerMove;
 import misat11.core.menu.ChatInput;
 import misat11.core.menu.ChatPanel;
 import misat11.core.menu.HealthBar;
@@ -23,8 +23,7 @@ import misat11.core.object.GravityObject;
 import misat11.core.object.SimpleSpatialObject;
 import misat11.core.server.client.ClientDataManager;
 import misat11.core.server.client.ClientListener;
-import misat11.core.server.messages.PlayerData;
-import misat11.core.server.messages.PlayerDataMessage;
+import misat11.core.server.messages.PlayerSettingsMessage;
 import misat11.core.server.messages.ServerInfoMessage;
 import misat11.core.server.messages.TextMessage;
 
@@ -43,11 +42,9 @@ public class ConnectionEvent extends AbstractEvent {
     private ClientListener listener;
     private Client client;
 
-    private PlayerData my_playerdata;
-
     private ServerInfoMessage serverInfoMessage;
 
-    private CharacterMove move;
+    private MultiplayerMove move;
 
     public ChatPanel chatwindow;
     public int chatwindow_id;
@@ -62,12 +59,14 @@ public class ConnectionEvent extends AbstractEvent {
     private HealthBar healthbar;
     private int healthbar_id;
 
-    private boolean alliscompleted;
-
     private MultiplayerPauseMenu pausemenu;
     private int pausemenu_id;
 
     private boolean paused = false;
+
+    private PlayerSettingsMessage settingsMessage;
+
+    private AbstractView view;
 
     public ConnectionEvent(AbstractCore main, String ip, int port, String nickname) {
         super(main);
@@ -81,13 +80,15 @@ public class ConnectionEvent extends AbstractEvent {
         try {
             System.out.println("Connecting to server [" + ip + ":" + port + "] as " + nickname);
 
-            dataManager = new ClientDataManager(main, this);
+            view = new ThirdPersonView(main, main.getCamera(), main.getInputManager());
+
+            client = Network.connectToServer(Utils.BASE_GAMEHASHCODE, Utils.PROTOCOL, ip, port);
+
+            dataManager = new ClientDataManager(client, main, this);
             listener = new ClientListener(this, client, dataManager);
-            client = Network.connectToServer(ip, port);
             client.addMessageListener(listener);
             client.start();
-            my_playerdata = new PlayerData(client.getId(), nickname, new Vector3f(), new Quaternion(), "Models/womanmodel.j3o", 100);
-            client.send(new PlayerDataMessage(my_playerdata));
+            settingsMessage = new PlayerSettingsMessage(nickname);
             dataManager.setMyId(client.getId());
 
             healthbar = new HealthBar();
@@ -101,13 +102,17 @@ public class ConnectionEvent extends AbstractEvent {
             pausemenu_id = main.gameRegisterPanel(pausemenu);
 
             main.attachPanel(chatwindow_id);
-            main.attachPanel(healthbar_id);
 
             chatwindow.getContainer().setAlpha(0.3f);
 
             MultiplayerKeys multiplayerkeys = new MultiplayerKeys(main, this);
             specialkeys_id = main.registerKeyBoardAction(multiplayerkeys);
             main.constructKeyBoardAction(specialkeys_id);
+
+            if (client.isConnected() == false) {
+                end();
+                return;
+            }
 
             System.out.println("Waiting for server information.");
 
@@ -129,21 +134,18 @@ public class ConnectionEvent extends AbstractEvent {
                 }
             }
 
-            if (serverInfoMessage.getGameHashCode().equals(Utils.BASE_GAMEHASHCODE) == false) {
-                client.close();
-                System.out.println("[Invalid Connection]: ServerInfoMessage has invalid gamehashcode. Disconnecting.");
-                return;
-            }
+            client.send(settingsMessage);
 
-            if (serverInfoMessage.getProtocolVersion() != Utils.PROTOCOL) {
-                client.close();
-                System.out.println("[Invalid Connection]: ServerInfoMessage has invalid protocol version. Disconnecting.");
-                return;
-            }
+            main.attachPanel(healthbar_id);
+
+            move = new MultiplayerMove(main, client);
+            move_id = main.registerKeyBoardAction(move);
+            main.constructKeyBoardAction(move_id);
+
+            main.getInputManager().setCursorVisible(false);
 
             int terrain_id = main.gameRegisterObject(new GravityObject(main, new SimpleSpatialObject(main.getAssetManager().loadModel(serverInfoMessage.getWorldScene())), new RigidBodyControl(0f)));
             main.attachObject(terrain_id);
-            alliscompleted = true;
             System.out.println("Connection succesfully, waiting for updates");
         } catch (IOException ex) {
 
@@ -152,32 +154,7 @@ public class ConnectionEvent extends AbstractEvent {
 
     @Override
     public void update() {
-        if (alliscompleted == false) {
-            return;
-        }
-        if (client.isConnected()) {
-            client.send(new PlayerDataMessage(my_playerdata));
-        }
-        if (dataManager.isTherePlayerWithId(dataManager.getMyId())) {
-            if (move == null) {
-                move = new CharacterMove(main, dataManager.getCharacter(dataManager.getMyId()));
-                move_id = main.registerKeyBoardAction(move);
-                main.constructKeyBoardAction(move_id);
-                main.setChasecam(dataManager.getObjectId(dataManager.getMyId()));
-            }
-            if (move.character != dataManager.getCharacter(dataManager.getMyId())) {
-                move.character = dataManager.getCharacter(dataManager.getMyId());
-                main.setChasecam(dataManager.getObjectId(dataManager.getMyId()));
-            }
-            if (move != null) {
-                move.setStopped(isChatopenOrPaused());
-            }
-            healthbar.update(dataManager.getPlayerData(dataManager.getMyId()).getHealth() / 100);
-            dataManager.getCharacter(dataManager.getMyId()).update();
-            my_playerdata.setLocation(dataManager.getCharacter(dataManager.getMyId()).getControl().getPhysicsLocation());
-            my_playerdata.setWalkDirection(dataManager.getCharacter(dataManager.getMyId()).getControl().getWalkDirection());
-            my_playerdata.setViewDirection(dataManager.getCharacter(dataManager.getMyId()).getControl().getViewDirection());
-        }
+        view.update(0.02f);
     }
 
     @Override
@@ -185,6 +162,7 @@ public class ConnectionEvent extends AbstractEvent {
         if (client.isConnected()) {
             client.close();
         }
+        main.getInputManager().setCursorVisible(true);
         dataManager = null;
         System.out.println("Connection to [" + ip + ":" + port + "] closed. Thank for connection.");
     }
@@ -203,14 +181,6 @@ public class ConnectionEvent extends AbstractEvent {
 
     public ClientListener getListener() {
         return listener;
-    }
-
-    public PlayerData getMyPlayerdata() {
-        return my_playerdata;
-    }
-
-    public void setMyPlayerdata(PlayerData my_playerdata) {
-        this.my_playerdata = my_playerdata;
     }
 
     public boolean isChatopen() {
@@ -247,14 +217,20 @@ public class ConnectionEvent extends AbstractEvent {
                 main.attachPanel(chatinput_id);
             }
             main.attachPanel(pausemenu_id);
+            main.getInputManager().setCursorVisible(true);
             paused = true;
         } else {
             chatopen = false;
             chatwindow.getContainer().setAlpha(0.3f);
+            main.getInputManager().setCursorVisible(false);
             main.detachPanel(chatinput_id);
             main.detachPanel(pausemenu_id);
             paused = false;
         }
+    }
+
+    public AbstractView getView() {
+        return view;
     }
 
 }

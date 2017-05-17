@@ -12,6 +12,7 @@ import java.util.Iterator;
 import misat11.core.AbstractCore;
 import misat11.core.character.SimpleCharacter;
 import misat11.core.events.AbstractEvent;
+import misat11.core.gamelogic.states.MovementAppState;
 import misat11.core.keyboard.CharacterMove;
 import misat11.core.object.BoxGeometry;
 import misat11.core.object.GravityObject;
@@ -123,17 +124,20 @@ public class SingleplayerEvent extends AbstractEvent {
                 }
             }
         }
+        
+        
+        main.getGameLogic().attachAppState(new MovementAppState(control));
 
     }
 
     @Override
     public void update() {
-        control.update();
+        
     }
 
     @Override
     public void end() {
-        
+
     }
 
     public void pause() {

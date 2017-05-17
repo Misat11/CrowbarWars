@@ -12,30 +12,36 @@ import com.simsilica.lemur.Label;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 import misat11.core.events.ConnectionEvent;
-import misat11.core.server.messages.JoinLeaveMessage;
-import misat11.core.server.messages.PlayerListMessage;
+import misat11.core.server.messages.CameraLookMessage;
+import misat11.core.server.messages.ChangeEntityLocationMessage;
+import misat11.core.server.messages.ChangeObjectLocationMessage;
+import misat11.core.server.messages.DespawnEntityMessage;
+import misat11.core.server.messages.DespawnObjectMessage;
 import misat11.core.server.messages.ServerInfoMessage;
+import misat11.core.server.messages.ServerWantClientHasMessage;
+import misat11.core.server.messages.SpawnEntityMessage;
+import misat11.core.server.messages.SpawnObjectMessage;
 import misat11.core.server.messages.TextMessage;
 
 /**
  *
  * @author misat11
  */
-public class ClientListener implements MessageListener<Client>{
+public class ClientListener implements MessageListener<Client> {
 
     private Client client;
     private ClientDataManager dataManager;
     private ConnectionEvent connection;
-    
+
     private int first_in_list = 1;
     private HashMap<Integer, Label> list = new HashMap<Integer, Label>();
-    
-    public ClientListener(ConnectionEvent connection, Client client, ClientDataManager dataManager){
+
+    public ClientListener(ConnectionEvent connection, Client client, ClientDataManager dataManager) {
         this.client = client;
         this.dataManager = dataManager;
         this.connection = connection;
     }
-    
+
     @Override
     public void messageReceived(Client source, Message m) {
         if (m instanceof TextMessage) {
@@ -57,19 +63,25 @@ public class ClientListener implements MessageListener<Client>{
                 }
 
             });
-        } else if (m instanceof PlayerListMessage) {
-            PlayerListMessage lm = (PlayerListMessage) m;
-            dataManager.refreshPlayerList(lm.getPlayerList());
         } else if (m instanceof ServerInfoMessage) {
             connection.setServerInfoMessage((ServerInfoMessage) m);
-        } else if (m instanceof JoinLeaveMessage) {
-            JoinLeaveMessage jlm = (JoinLeaveMessage) m;
-            if (jlm.getIfJoinOrLeave()) {
-
-            } else {
-                
-            }
+        } else if (m instanceof SpawnEntityMessage) {
+            dataManager.spawnEntity((SpawnEntityMessage) m);
+        } else if (m instanceof SpawnObjectMessage) {
+            dataManager.spawnObject((SpawnObjectMessage) m);
+        } else if (m instanceof DespawnEntityMessage) {
+            dataManager.despawnEntity((DespawnEntityMessage) m);
+        } else if (m instanceof DespawnObjectMessage) {
+            dataManager.despawnObject((DespawnObjectMessage) m);
+        } else if (m instanceof ChangeEntityLocationMessage) {
+            dataManager.teleportEntity((ChangeEntityLocationMessage) m);
+        } else if (m instanceof ChangeObjectLocationMessage) {
+            dataManager.teleportObject((ChangeObjectLocationMessage) m);
+        } else if (m instanceof CameraLookMessage) {
+            dataManager.look(((CameraLookMessage) m).getLocation());
+        } else if (m instanceof ServerWantClientHasMessage){
+        
         }
     }
-    
+
 }

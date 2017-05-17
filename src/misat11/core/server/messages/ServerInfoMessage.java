@@ -16,16 +16,12 @@ import com.jme3.network.serializing.Serializable;
 public class ServerInfoMessage extends AbstractMessage {
     private String worldscene;
     private String servername;
-    private int protocol;
-    private String gamehashcode;
     
     public ServerInfoMessage() {}
     
-    public ServerInfoMessage(String worldscene, String servername, int protocol, String gamehashcode) {
+    public ServerInfoMessage(String worldscene, String servername) {
         this.worldscene = worldscene;
         this.servername = servername;
-        this.protocol = protocol;
-        this.gamehashcode = gamehashcode;
     }
     
     public String getWorldScene() {
@@ -34,13 +30,5 @@ public class ServerInfoMessage extends AbstractMessage {
     
     public String getServerName() {
         return servername;
-    }
-    
-    public String getGameHashCode() {
-        return gamehashcode;
-    }
-    
-    public int getProtocolVersion() {
-        return protocol;
     }
 }

@@ -90,7 +90,7 @@ public class SimpleCharacter extends AbstractCharacter {
     }
 
     @Override
-    public void update() {
+    public void update(float tpf) {
         Vector3f camDir = main.getCamera().getDirection().clone();
         Vector3f camLeft = main.getCamera().getLeft().clone();
         camDir.y = 0;
@@ -129,7 +129,7 @@ public class SimpleCharacter extends AbstractCharacter {
             }
         }
 
-        walkDirection.multLocal(25f).multLocal(main.tpf);
+        walkDirection.multLocal(5f).multLocal(tpf);
         control.setWalkDirection(walkDirection);
     }
 

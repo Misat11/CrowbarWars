@@ -36,7 +36,7 @@ public abstract class AbstractCharacter {
         return control;
     }
 
-    public abstract void update();
+    public abstract void update(float tpf);
 
     public void setControl(CharacterControl control) {
         this.control = control;

@@ -59,6 +59,7 @@ public class ChatInput extends AbstractPanel {
             event.chatwindow.getContainer().setAlpha(0.3f);
             event.main.detachPanel(event.chatinput_id);
             event.setChatopen(false);
+            event.main.getInputManager().setCursorVisible(false);
         }
     }
 
