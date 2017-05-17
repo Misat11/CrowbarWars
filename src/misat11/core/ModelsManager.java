@@ -42,7 +42,7 @@ public class ModelsManager {
     private Set<Model> models = new HashSet<Model>();
 
     public ModelsManager() {
-        //models.add(new Model(new ModelInfo("WomanModel1", "Misat11", "https://github.com/Misat11/CrowbarWars/blob/master/assets/Models/womanmodel.j3o?raw=true", 1), "Models/womanmodel.j3o"));
+        models.add(new Model(new ModelInfo("WomanModel1", "Misat11", "https://github.com/Misat11/CrowbarWars/blob/master/assets/Models/womanmodel.j3o?raw=true", 1), "Models/womanmodel.j3o"));
         models.add(new Model(new ModelInfo("TestMap", "Misat11", "https://github.com/Misat11/CrowbarWars/blob/master/assets/Scenes/Region0/main.j3o?raw=true", 1), "Scenes/Region0/main.j3o"));
     }
 
