@@ -17,31 +17,34 @@ import misat11.core.server.messages.ChangeEntityLocationMessage;
 import misat11.core.server.messages.ChangeObjectLocationMessage;
 import misat11.core.server.messages.DespawnEntityMessage;
 import misat11.core.server.messages.DespawnObjectMessage;
+import misat11.core.server.messages.HealthBarUpdateMessage;
 import misat11.core.server.messages.ServerInfoMessage;
 import misat11.core.server.messages.ServerWantClientHasMessage;
 import misat11.core.server.messages.SpawnEntityMessage;
 import misat11.core.server.messages.SpawnObjectMessage;
 import misat11.core.server.messages.TextMessage;
+import misat11.core.server.messages.guis.CloseGuiMessage;
+import misat11.core.server.messages.guis.OpenGuiMessage;
 
 /**
  *
  * @author misat11
  */
 public class ClientListener implements MessageListener<Client> {
-
+    
     private Client client;
     private ClientDataManager dataManager;
     private ConnectionEvent connection;
-
+    
     private int first_in_list = 1;
     private HashMap<Integer, Label> list = new HashMap<Integer, Label>();
-
+    
     public ClientListener(ConnectionEvent connection, Client client, ClientDataManager dataManager) {
         this.client = client;
         this.dataManager = dataManager;
         this.connection = connection;
     }
-
+    
     @Override
     public void messageReceived(Client source, Message m) {
         if (m instanceof TextMessage) {
@@ -61,7 +64,7 @@ public class ClientListener implements MessageListener<Client> {
                     list.put(list.size() + 1, child);
                     return null;
                 }
-
+                
             });
         } else if (m instanceof ServerInfoMessage) {
             connection.setServerInfoMessage((ServerInfoMessage) m);
@@ -79,9 +82,15 @@ public class ClientListener implements MessageListener<Client> {
             dataManager.teleportObject((ChangeObjectLocationMessage) m);
         } else if (m instanceof CameraLookMessage) {
             dataManager.look(((CameraLookMessage) m).getLocation());
-        } else if (m instanceof ServerWantClientHasMessage){
-        
+        } else if (m instanceof ServerWantClientHasMessage) {
+            dataManager.sendClientHasMessage();
+        } else if (m instanceof OpenGuiMessage) {
+            dataManager.addGui((OpenGuiMessage) m);
+        } else if (m instanceof CloseGuiMessage) {
+            dataManager.removeGui((CloseGuiMessage) m);
+        } else if (m instanceof HealthBarUpdateMessage){
+            dataManager.updateHealthBar(((HealthBarUpdateMessage) m).getPercent());
         }
     }
-
+    
 }

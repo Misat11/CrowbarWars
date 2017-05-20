@@ -11,12 +11,11 @@ import com.simsilica.lemur.Container;
  *
  * @author misat11
  */
-public abstract class AbstractPanel {
+public abstract class AbstractPanel implements GuiPanel {
     public Container container;
     public boolean isAttached;
     
-    public abstract void completeContainer();
-    
+    @Override
     public Container getContainer(){
         return this.container;
     }
@@ -25,10 +24,12 @@ public abstract class AbstractPanel {
         this.container = container;
     }
     
+    @Override
     public void setIsAttached(boolean v){
         this.isAttached = v;
     }
     
+    @Override
     public boolean getIsAttached(){
         return isAttached;
     }

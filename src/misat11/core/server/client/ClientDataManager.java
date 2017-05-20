@@ -20,6 +20,8 @@ import misat11.core.server.messages.DespawnEntityMessage;
 import misat11.core.server.messages.DespawnObjectMessage;
 import misat11.core.server.messages.SpawnEntityMessage;
 import misat11.core.server.messages.SpawnObjectMessage;
+import misat11.core.server.messages.guis.CloseGuiMessage;
+import misat11.core.server.messages.guis.OpenGuiMessage;
 
 /**
  *
@@ -30,15 +32,17 @@ public class ClientDataManager {
     private AbstractCore main;
     private ConnectionEvent connection;
     private Client client;
+    private GuiManager guiManager;
     private HashMap<Integer, Integer> objects = new HashMap<Integer, Integer>();
     private HashMap<Integer, AbstractCharacter> entities = new HashMap<Integer, AbstractCharacter>();
     private HashMap<Integer, Integer> headtext = new HashMap<Integer, Integer>();
     private int myId;
 
-    public ClientDataManager(Client client, AbstractCore main, ConnectionEvent connection) {
+    public ClientDataManager(Client client, AbstractCore main, ConnectionEvent connection, GuiManager guiManager) {
         this.client = client;
         this.main = main;
         this.connection = connection;
+        this.guiManager = guiManager;
         connection.getView().setLocation(new Vector3f(0f, 60f, 0f));
     }
 
@@ -142,5 +146,27 @@ public class ClientDataManager {
             list.add(key);
         }
         return list;
+    }
+
+    public void addGui(OpenGuiMessage m) {
+        guiManager.addGui(m);
+    }
+
+    public void removeGui(CloseGuiMessage m) {
+        guiManager.removeGui(m);
+    }
+
+    public void updateHealthBar(float percent) {
+        if (percent > 100) {
+            connection.updateHealthBar(1);
+        } else if (percent < 0) {
+            connection.updateHealthBar(0);
+        } else {
+            connection.updateHealthBar(percent / 100);
+        }
+    }
+
+    public void destroy() {
+        //TODO
     }
 }

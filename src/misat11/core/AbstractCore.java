@@ -22,7 +22,6 @@ import com.jme3.system.AppSettings;
 import com.jme3.system.JmeSystem;
 import com.simsilica.lemur.GuiGlobals;
 import com.simsilica.lemur.style.BaseStyles;
-import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -32,11 +31,10 @@ import java.util.concurrent.TimeUnit;
 import misat11.core.events.AbstractEvent;
 import misat11.core.events.LoadEvent;
 import misat11.core.gamelogic.LogicThread;
-import misat11.core.json.JSONCreate;
 import misat11.core.json.JSONLoader;
 import misat11.core.keyboard.AbstractActionOnKey;
 import misat11.core.keyboard.ControlSettings;
-import misat11.core.menu.AbstractPanel;
+import misat11.core.menu.GuiPanel;
 import misat11.core.object.AbstractObject;
 import misat11.core.server.messages.ModelInfo;
 import org.json.simple.JSONArray;
@@ -50,7 +48,7 @@ public abstract class AbstractCore extends LegacyApplication {
 
     public float tpf;
     private HashMap<Integer, AbstractObject> objects = new HashMap<Integer, AbstractObject>();
-    private HashMap<Integer, AbstractPanel> panels = new HashMap<Integer, AbstractPanel>();
+    private HashMap<Integer, GuiPanel> panels = new HashMap<Integer, GuiPanel>();
     private HashMap<Integer, AbstractActionOnKey> keyboardActions = new HashMap<Integer, AbstractActionOnKey>();
     public BulletAppState bulletAppState;
     private AbstractEvent event;
@@ -84,9 +82,10 @@ public abstract class AbstractCore extends LegacyApplication {
 
     @Override
     public void start() {
-
+        Utils.createUtils(this);
+        
         Utils.initSerializer();
-
+        
         boolean loadSettings = false;
         if (settings == null) {
             setSettings(new AppSettings(true));
@@ -254,7 +253,7 @@ public abstract class AbstractCore extends LegacyApplication {
             this.event.end();
 
             if (panels.isEmpty() == false) {
-                for (Map.Entry<Integer, AbstractPanel> panel : panels.entrySet()) {
+                for (Map.Entry<Integer, GuiPanel> panel : panels.entrySet()) {
                     guiNode.detachChild(panel.getValue().getContainer());
                     writeDebug("Detaching panel: " + panel.getKey());
                 }
@@ -336,7 +335,7 @@ public abstract class AbstractCore extends LegacyApplication {
         chasecam = new ChaseCamera(cam, getObject(obj_id).getSpatial(), inputManager);
     }
 
-    public int gameRegisterPanel(AbstractPanel panel) {
+    public int gameRegisterPanel(GuiPanel panel) {
         panel.completeContainer();
         panels.put(panels.size() + 1, panel);
         writeDebug("Registring panel with new id: " + panels.size());
@@ -347,7 +346,7 @@ public abstract class AbstractCore extends LegacyApplication {
         return panels.containsKey(id);
     }
 
-    public AbstractPanel getPanel(int id) {
+    public GuiPanel getPanel(int id) {
         return panels.get(id);
     }
 
@@ -438,6 +437,10 @@ public abstract class AbstractCore extends LegacyApplication {
 
     public void setSaveurl(String saveurl) {
         this.saveurl = saveurl;
+    }
+
+    public AppSettings getSettings() {
+        return settings;
     }
 
 }

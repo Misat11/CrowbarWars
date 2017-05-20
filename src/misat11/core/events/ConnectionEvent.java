@@ -11,7 +11,6 @@ import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.network.Client;
 import com.jme3.network.Network;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -19,7 +18,6 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import misat11.core.AbstractCore;
 import misat11.core.Utils;
-import misat11.core.json.JSONLoader;
 import misat11.core.json.JSONWrite;
 import misat11.core.keyboard.MultiplayerKeys;
 import misat11.core.keyboard.MultiplayerMove;
@@ -31,6 +29,7 @@ import misat11.core.object.GravityObject;
 import misat11.core.object.SimpleSpatialObject;
 import misat11.core.server.client.ClientDataManager;
 import misat11.core.server.client.ClientListener;
+import misat11.core.server.client.GuiManager;
 import misat11.core.server.messages.ModelInfo;
 import misat11.core.server.messages.PlayerSettingsMessage;
 import misat11.core.server.messages.ServerInfoMessage;
@@ -79,6 +78,8 @@ public class ConnectionEvent extends AbstractEvent {
 
     private HashMap<String, ModelInfo> modelsInfo;
 
+    private GuiManager guiManager;
+
     public ConnectionEvent(AbstractCore main, String ip, int port, String nickname) {
         super(main);
         this.ip = ip;
@@ -95,7 +96,8 @@ public class ConnectionEvent extends AbstractEvent {
 
             client = Network.connectToServer(Utils.BASE_GAMEHASHCODE, Utils.PROTOCOL, ip, port);
 
-            dataManager = new ClientDataManager(client, main, this);
+            guiManager = new GuiManager();
+            dataManager = new ClientDataManager(client, main, this, guiManager);
             listener = new ClientListener(this, client, dataManager);
             client.addMessageListener(listener);
             client.start();
@@ -193,6 +195,8 @@ public class ConnectionEvent extends AbstractEvent {
             client.close();
         }
         main.getInputManager().setCursorVisible(true);
+        dataManager.destroy();
+        guiManager.removeAllGuis();
         dataManager = null;
         System.out.println("Connection to [" + ip + ":" + port + "] closed. Thank for connection.");
     }
@@ -266,6 +270,10 @@ public class ConnectionEvent extends AbstractEvent {
     public String getModelUrl(String internalServerName) {
         ModelInfo model = modelsInfo.get(internalServerName);
         return main.getModelsManager().getUrl(model);
+    }
+
+    public void updateHealthBar(double percent) {
+        healthbar.update(percent);
     }
 
 }
