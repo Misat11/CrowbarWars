@@ -5,15 +5,17 @@
  */
 package misat11.core.server.client.guibuilders;
 
+import com.jme3.scene.Node;
+
 /**
  *
  * @author misat11
  */
 public abstract class AbstractGuiBuilder {
 
-    public abstract void build();
-
-    public abstract void destroy();
-
-    protected boolean builded = false;
+    public abstract void build(Node node);
+    
+    public void destroy(){
+    
+    }
 }

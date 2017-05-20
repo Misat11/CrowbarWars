@@ -1,7 +1,10 @@
 package misat11.core.server.client;
 
+import com.jme3.scene.Node;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import misat11.core.Utils;
+import misat11.core.menu.SpatialGui;
 import misat11.core.server.client.guibuilders.AbstractGuiBuilder;
 import misat11.core.server.client.guibuilders.QuadBuilder;
 import misat11.core.server.client.guibuilders.TextBuilder;
@@ -27,6 +30,7 @@ public class GuiManager {
         private Gui gui;
         private HashMap<AbstractGuiElement, AbstractGuiBuilder> builders = new HashMap<AbstractGuiElement, AbstractGuiBuilder>();
         private boolean builded = false;
+        private int id_in_main;
 
         public G(Gui gui) {
             this.gui = gui;
@@ -34,23 +38,28 @@ public class GuiManager {
 
         public void build() {
             if (!builded) {
+                Node node = new Node("MULTIPLAYER-GUI " + Integer.toString(gui.getGuiId()));
                 for (AbstractGuiElement element : gui.getElements()) {
                     if (element instanceof TextWCounterElement) {
                         builders.put(element, new TextWCounterBuilder((TextWCounterElement) element));
-                        builders.get(element).build();
+                        builders.get(element).build(node);
                     } else if (element instanceof TextElement) {
                         builders.put(element, new TextBuilder((TextElement) element));
-                        builders.get(element).build();
+                        builders.get(element).build(node);
                     } else if (element instanceof QuadElement) {
                         builders.put(element, new QuadBuilder((QuadElement) element));
-                        builders.get(element).build();
+                        builders.get(element).build(node);
                     }
                 }
+                id_in_main = Utils.registerPanel(new SpatialGui(node));
+                Utils.attachPanel(id_in_main);
+                builded = true;
             }
         }
 
         public void destroy() {
             if (builded) {
+                Utils.detachPanel(id_in_main);
                 for (Entry<AbstractGuiElement, AbstractGuiBuilder> entry : builders.entrySet()) {
                     entry.getValue().destroy();
                 }

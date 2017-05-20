@@ -8,6 +8,7 @@ package misat11.core.server.client.guibuilders;
 import com.jme3.font.BitmapText;
 import com.jme3.font.Rectangle;
 import com.jme3.math.ColorRGBA;
+import com.jme3.scene.Node;
 import java.util.concurrent.TimeUnit;
 import misat11.core.Utils;
 import misat11.core.menu.SpatialGui;
@@ -36,7 +37,7 @@ public class TextWCounterBuilder extends AbstractGuiBuilder {
     }
 
     @Override
-    public void build() {
+    public void build(Node node) {
         counter = new Counter();
         actualIn = element.getActualIn();
         String newstring = element.getText().replace(element.getCounterInText(), Integer.toString(actualIn));
@@ -48,20 +49,15 @@ public class TextWCounterBuilder extends AbstractGuiBuilder {
                 Utils.convertPrecentToLocX(element.getLoc_x()),
                 Utils.convertPrecentToLocY(element.getLoc_y()),
                 Utils.convertPrecentToLocX(element.getSize_x()),
-                Utils.convertPrecentToLocY(element.getSize_y())));
-        SpatialGui gui = Utils.convertSpatialToGuiPanel(text);
-        id_in_main = Utils.registerPanel(gui);
-        Utils.attachPanel(id_in_main);
+                Utils.convertPrecentToLocY(element.getSize_y()))); 
+        node.attachChild(text);
         running = true;
         counter.start();
-        builded = true;
     }
 
     @Override
     public void destroy() {
         running = false;
-        Utils.detachPanel(id_in_main);
-        builded = false;
     }
 
     protected class Counter extends Thread {
